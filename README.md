@@ -1,93 +1,181 @@
-# Intellitoggle Openfeature Provider Dart
+**IntelliToggle OpenFeature Provider for Dart (Server-Side SDK)**
 
+This provider enables using IntelliToggle’s feature management platform with the OpenFeature Dart Server-Side SDK.
 
+> **Note:** This provider targets multi-user server environments (e.g. web servers, back-end services). It is **not** intended for use in Flutter desktop or embedded contexts.
 
-## Getting started
+---
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## IntelliToggle Overview
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+[IntelliToggle](https://intellitoggle.com) is a SaaS feature-flag and experimentation platform that powers dynamic rollouts, canary deployments, and real-time flag evaluations. By integrating with OpenFeature, you can swap providers transparently, leverage IntelliToggle’s advanced rules engine, and maintain consistent flag behavior across services.
 
-## Add your files
+---
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+## Supported Dart Versions
 
+Compatible with Dart **2.17** and above.
+
+---
+
+## Getting Started
+
+### Installation
+
+Add to your server-side `pubspec.yaml`:
+
+```yaml
+dependencies:
+  open_feature: ^0.1.0
+  intellitoggle_openfeature: ^0.0.1
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/dartapps/apps/intelli-toggle/intellitoggle-openfeature-provider-dart.git
-git branch -M main
-git push -uf origin main
+
+Then run:
+
+```bash
+dart pub get
 ```
 
-## Integrate with your tools
+### Usage
 
-- [ ] [Set up project integrations](https://gitlab.com/dartapps/apps/intelli-toggle/intellitoggle-openfeature-provider-dart/-/settings/integrations)
+```dart
+import 'package:open_feature/open_feature.dart';
+import 'package:intellitoggle_openfeature/intellitoggle_provider.dart';
 
-## Collaborate with your team
+void main() async {
+  // Create and register the IntelliToggle provider
+  final provider = IntelliToggleProvider(
+    sdkKey: 'YOUR_INTELLITOGGLE_SDK_KEY',
+    options: IntelliToggleOptions(
+      timeout: Duration(seconds: 5),
+      baseUri: Uri.parse('https://api.intellitoggle.com'),
+    ),
+  );
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+  // Set as the global OpenFeature provider
+  OpenFeature.instance.setProvider(provider);
 
-## Test and Deploy
+  // Optionally wait until ready
+  await OpenFeature.instance.setProviderAndWait(provider);
 
-Use the built-in continuous integration in GitLab.
+  // Create a client and evaluate a flag
+  final client = OpenFeature.instance.getClient('my-service');
+  final value = await client.getBooleanValue(
+    'new-dashboard-enabled',
+    false,
+    evaluationContext: {
+      'kind': 'user',
+      'targetingKey': 'user-123',
+      'role': 'beta_tester',
+    },
+  );
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+  print('Feature “new-dashboard-enabled” = $value');
+}
+```
 
-***
+---
 
-# Editing this README
+## OpenFeature Context & IntelliToggle Specifics
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+IntelliToggle supports both single-context and multi-context flag evaluations. The provider inspects your `evaluationContext` for a `kind` attribute:
 
-## Suggestions for a good README
+1. **No `kind`** → treated as a single “user” context.
+2. **`kind: 'multi'`** → multi-context; additional keys denote each context.
+3. **`kind: '<anything-else>'`** → single context of that custom kind.
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+> The `targetingKey` (or `key`) attribute is **required** and takes precedence over `key` if both are present.
 
-## Name
-Choose a self-explaining name for your project.
+### Reserved Context Attributes
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+* `privateAttributes` (List<String>) → hides sensitive fields
+* `anonymous` (bool) → flags the context as anonymous
+* `name` (String) → human-readable name
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+---
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+## Examples
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+### Single-User Context
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+```dart
+final ctx = {
+  'targetingKey': 'user-123',
+  'name': 'Jane Doe',
+  'anonymous': false,
+};
+final flag = await client.getBooleanValue('beta-feature', false, evaluationContext: ctx);
+```
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+### Custom Context Kind
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+```dart
+final ctx = {
+  'kind': 'organization',
+  'targetingKey': 'org-456',
+  'plan': 'enterprise',
+};
+final flag = await client.getStringValue('org-level-flag', 'none', evaluationContext: ctx);
+```
+
+### Multi-Context
+
+```dart
+final ctx = {
+  'kind': 'multi',
+  'user': {
+    'targetingKey': 'user-123',
+    'email': 'jane@example.com',
+  },
+  'project': {
+    'targetingKey': 'proj-789',
+    'tier': 'beta',
+  },
+};
+final flag = await client.getObjectValue<Map<String, dynamic>>(
+  'project-experiment',
+  {},
+  evaluationContext: ctx,
+);
+```
+
+---
+
+## Provider Events
+
+You can listen to lifecycle events:
+
+```dart
+OpenFeature.instance.addHandler(ProviderEvents.Ready, (_) {
+  print('IntelliToggle provider is ready!');
+});
+
+OpenFeature.instance.addHandler(ProviderEvents.ConfigurationChanged, (evt) {
+  print('Flags changed: ${evt.flagsChanged}');
+});
+```
+
+---
+
+## Cleanup
+
+Before your process shuts down, flush any pending events:
+
+```dart
+await OpenFeature.instance.close();
+```
+
+---
 
 ## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+We welcome contributions! See [`CONTRIBUTING.md`](https://github.com/intellitoggle/openfeature-dart) for guidelines.
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+---
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+## Learn More
 
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+* **Website:** [https://intellitoggle.com](https://intellitoggle.com)
+* **Docs & CLI:** [https://docs.intellitoggle.com/openfeature-dart](https://docs.intellitoggle.com/openfeature-dart)
+* **API Reference:** [https://api.intellitoggle.com/docs](https://api.intellitoggle.com/docs)
+* **GitHub:** [https://github.com/intellitoggle/openfeature-dart](https://github.com/intellitoggle/openfeature-dart)
