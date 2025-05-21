@@ -1,3 +1,25 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/aortem/logos/main/Aortem-logo-small.png" />
+    <img align="center" alt="Aortem Logo" src="https://raw.githubusercontent.com/aortem/logos/main/Aortem-logo-small.png" />
+  </picture>
+</p>
+
+<!-- x-hide-in-docs-end -->
+<p align="center" class="github-badges">
+  <!-- Release Badge -->
+  <a href="https://github.com/aortem/intellitoggle/tags">
+    <img alt="GitHub Tag" src="https://img.shields.io/github/v/tag/aortem/intellitoggle?style=for-the-badge" />
+  </a>
+  <!-- Dart-Specific Badges -->
+  <a href="https://pub.dev/packages/firebase_dart_admin_auth_sdk">
+    <img alt="Pub Version" src="https://img.shields.io/pub/v/firebase_dart_admin_auth_sdk.svg?style=for-the-badge" />
+  </a>
+  <a href="https://dart.dev/">
+    <img alt="Built with Dart" src="https://img.shields.io/badge/Built%20with-Dart-blue.svg?style=for-the-badge" />
+  </a>
+<!-- x-hide-in-docs-start -->
+
 # IntelliToggle OpenFeature Provider for Dart (Server-Side SDK)**
 
 This provider enables using IntelliToggle’s feature management platform with the OpenFeature Dart Server-Side SDK.
