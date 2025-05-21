@@ -1,4 +1,4 @@
-**IntelliToggle OpenFeature Provider for Dart (Server-Side SDK)**
+# IntelliToggle OpenFeature Provider for Dart (Server-Side SDK)**
 
 This provider enables using IntelliToggle’s feature management platform with the OpenFeature Dart Server-Side SDK.
 
