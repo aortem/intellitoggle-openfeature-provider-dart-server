@@ -87,32 +87,32 @@ validate_commit_messages:
   rules:
     - when: always
 
-firebase:preview:
-  image: google/cloud-sdk:alpine
-  stage: preview
-  before_script:
-    - apk add --no-cache nodejs npm 
-    - bash tools/scripts/firebase/gcloud_prod_acc_firebase_production.sh
-  script:
-    - ls -la
-    - cd intellitoggle/frontend
-    - firebase hosting:channel:deploy $CI_COMMIT_REF_NAME --debug
-  rules:
-    # Condition 1: Branch is not main, qa, or development
-    - if: '$CI_COMMIT_BRANCH != "main"'
-      when: always
+# firebase:preview:
+#   image: google/cloud-sdk:alpine
+#   stage: preview
+#   before_script:
+#     - apk add --no-cache nodejs npm 
+#     - bash tools/scripts/firebase/gcloud_prod_acc_firebase_production.sh
+#   script:
+#     - ls -la
+#     - cd intellitoggle/frontend
+#     - firebase hosting:channel:deploy $CI_COMMIT_REF_NAME --debug
+#   rules:
+#     # Condition 1: Branch is not main, qa, or development
+#     - if: '$CI_COMMIT_BRANCH != "main"'
+#       when: always
 
-firebase:deploy:
-  image: google/cloud-sdk:alpine
-  stage: deploy
-  before_script:
-    - apk add --no-cache nodejs npm 
-    - bash tools/scripts/firebase/gcloud_prod_acc_firebase_production.sh
-  script:
-    - ls -la
-    - cd intellitoggle/frontend
-    - firebase deploy --project intellitoggle-prod
-  rules:
-    # Condition 1: Branch is not main, qa, or development
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: always
+# firebase:deploy:
+#   image: google/cloud-sdk:alpine
+#   stage: deploy
+#   before_script:
+#     - apk add --no-cache nodejs npm 
+#     - bash tools/scripts/firebase/gcloud_prod_acc_firebase_production.sh
+#   script:
+#     - ls -la
+#     - cd intellitoggle/frontend
+#     - firebase deploy --project intellitoggle-prod
+#   rules:
+#     # Condition 1: Branch is not main, qa, or development
+#     - if: '$CI_COMMIT_BRANCH == "main"'
+#       when: always
