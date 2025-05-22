@@ -1,9 +1,22 @@
-/// Public API for the IntelliToggle OpenFeature Dart SDK.
-///
-/// Exports the provider, client, options and utility types.
+// SPDX-License-Identifier: Apache-2.0
+
+/// IntelliToggle provider for OpenFeature Dart Server SDK
 library intellitoggle_openfeature;
 
-export 'src/options.dart' show IntelliToggleOptions;
-export 'src/provider.dart' show IntelliToggleProvider;
-export 'src/client.dart' show IntelliToggleClient;
-export 'src/utils.dart' show EvaluationContext;
+export 'src/provider.dart';
+export 'src/client.dart';
+export 'src/options.dart';
+export 'src/context.dart';
+export 'src/events.dart';
+export 'src/utils.dart'
+    show
+        IntelliToggleUtils,
+        FlagNotFoundException,
+        AuthenticationException,
+        ApiException;
+
+// Re-export OpenFeature types
+export 'package:openfeature_dart_server_sdk/open_feature_api.dart';
+export 'package:openfeature_dart_server_sdk/evaluation_context.dart';
+export 'package:openfeature_dart_server_sdk/feature_provider.dart';
+export 'package:openfeature_dart_server_sdk/client.dart';
