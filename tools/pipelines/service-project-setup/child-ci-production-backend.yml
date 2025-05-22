@@ -87,7 +87,7 @@ validate_dart_sdk_version:
   script:
     - echo "Validating Dart SDK versions in all pubspec.yaml files..."
     - apk add --no-cache grep
-    - cd intellitoggle
+    - cd intellitoggle-openfeature-provider-dart
 
     # Find all pubspec.yaml files (recursively, all levels)
     - PUBSPEC_FILES=$(find . -name "pubspec.yaml")
@@ -147,7 +147,7 @@ analyze_main:
     - echo "🔍 Locating Dart packages…"
     - |
       # Find all package dirs (where pubspec.yaml lives)
-      find intellitoggle/backend -type f -name pubspec.yaml -exec dirname {} \; | sort -u \
+      find intellitoggle-openfeature-provider-dart -type f -name pubspec.yaml -exec dirname {} \; | sort -u \
       | while read -r pkg; do
           name=$(basename "$pkg")
           echo "📦 Analyzing package: $name"
@@ -204,15 +204,15 @@ analyze_main:
   rules:
     - when: always
 
-# Build docker image using Cloud Build
-intellitoggle:prod_build:
-  image: google/cloud-sdk:alpine
-  stage: build
-  before_script:
-    - bash tools/scripts/service-project-setup/gcloud_prod_acc_intellitoggle.sh
-  script:
-    - cd intellitoggle/backend
-    - tar -czf intellitoggle-webapp-backend-prod.tgz ./*
-    - gcloud builds submit 
-        --tag us-central1-docker.pkg.dev/intellitoggle-prod/intellitoggle/intellitoggle:$CI_COMMIT_REF_SLUG
-  #retry: 2
+# # Build docker image using Cloud Build
+# intellitoggle:prod_build:
+#   image: google/cloud-sdk:alpine
+#   stage: build
+#   before_script:
+#     - bash tools/scripts/service-project-setup/gcloud_prod_acc_intellitoggle.sh
+#   script:
+#     - cd intellitoggle/backend
+#     - tar -czf intellitoggle-webapp-backend-prod.tgz ./*
+#     - gcloud builds submit 
+#         --tag us-central1-docker.pkg.dev/intellitoggle-prod/intellitoggle/intellitoggle:$CI_COMMIT_REF_SLUG
+#   #retry: 2
