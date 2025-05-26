@@ -20,5 +20,5 @@ export 'src/utils.dart'
 // Re-export OpenFeature types
 export 'package:openfeature_dart_server_sdk/open_feature_api.dart';
 export 'package:openfeature_dart_server_sdk/evaluation_context.dart';
-export 'package:openfeature_dart_server_sdk/feature_provider.dart';
+// export 'package:openfeature_dart_server_sdk/feature_provider.dart';
 export 'package:openfeature_dart_server_sdk/client.dart';

@@ -1,43 +1,42 @@
-import 'package:openfeature_dart_server_sdk/hook.dart';
+import 'package:openfeature_dart_server_sdk/hooks.dart';
 
 /// A hook that logs evaluation lifecycle events to the console.
 ///
 /// This hook is useful for debugging and local development. It prints
-/// messages to stdout at each stage of the flag evaluation lifecycle:
-/// - before: right before evaluation starts
-/// - after: after evaluation completes successfully
-/// - error: if an error occurs during evaluation
-/// - finallyAfter: after evaluation, regardless of success or error
+/// messages to stdout at each stage of the flag evaluation lifecycle.
 class ConsoleLoggingHook extends Hook {
-  /// Called before flag evaluation begins.
-  ///
-  /// Logs the flag key and evaluation context.
   @override
-  void before(HookContext context, HookHints hints) {
-    print('[OpenFeature] BEFORE: Evaluating flag "${context.flagKey}" with context: ${context.evaluationContext?.attributes}');
+  HookMetadata get metadata => const HookMetadata(name: 'ConsoleLoggingHook');
+
+  /// Called before flag evaluation begins.
+  @override
+  Future<void> before(HookContext context) async {
+    print(
+      '[OpenFeature] BEFORE: Evaluating flag "${context.flagKey}" with context: ${context.evaluationContext}',
+    );
   }
 
   /// Called after flag evaluation completes successfully.
-  ///
-  /// Logs the flag key, resolved value, and reason.
   @override
-  void after(HookContext context, HookHints hints, EvaluationDetails details) {
-    print('[OpenFeature] AFTER: Flag "${context.flagKey}" resolved to value: ${details.value} (reason: ${details.reason})');
+  Future<void> after(HookContext context) async {
+    print(
+      '[OpenFeature] AFTER: Flag "${context.flagKey}" evaluation completed.',
+    );
   }
 
   /// Called if an error occurs during flag evaluation.
-  ///
-  /// Logs the flag key and error details.
   @override
-  void error(HookContext context, HookHints hints, Exception error) {
-    print('[OpenFeature] ERROR: Flag "${context.flagKey}" evaluation failed: $error');
+  Future<void> error(HookContext context) async {
+    print(
+      '[OpenFeature] ERROR: Flag "${context.flagKey}" evaluation failed.',
+    );
   }
 
   /// Called after evaluation, regardless of outcome.
-  ///
-  /// Logs the flag key to indicate evaluation is finished.
   @override
-  void finallyAfter(HookContext context, HookHints hints) {
-    print('[OpenFeature] FINALLY: Finished evaluation for flag "${context.flagKey}"');
+  Future<void> finally_(HookContext context, [Object? result, Object? error]) async {
+    print(
+      '[OpenFeature] FINALLY: Finished evaluation for flag "${context.flagKey}"',
+    );
   }
 }
