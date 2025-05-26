@@ -8,6 +8,8 @@ export 'src/client.dart';
 export 'src/options.dart';
 export 'src/context.dart';
 export 'src/events.dart';
+export 'src/in_memory_provider.dart';
+export 'src/console_logging_hook.dart';
 export 'src/utils.dart'
     show
         IntelliToggleUtils,
