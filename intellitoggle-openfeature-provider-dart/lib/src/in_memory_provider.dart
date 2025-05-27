@@ -20,7 +20,7 @@ class InMemoryProvider implements FeatureProvider {
       StreamController<IntelliToggleEvent>.broadcast();
 
   /// Current state of the provider.
-  ProviderState _state = ProviderState.READY;
+  ProviderState _state = ProviderState.NOT_READY;
 
   @override
   String get name => 'InMemoryProvider';
@@ -67,6 +67,8 @@ class InMemoryProvider implements FeatureProvider {
   @override
   Future<void> initialize([Map<String, dynamic>? context]) async {
     _state = ProviderState.READY;
+    print('[InMemoryProvider] Initialized, state = $_state');
+    await Future.delayed(Duration.zero);
   }
 
   @override
@@ -99,7 +101,7 @@ class InMemoryProvider implements FeatureProvider {
 
   /// Resolve a string flag.
   ///
-  /// Returns the flag value if present and a String, otherwise returns [defaultValue].
+  /// Returns the flag value if present and a string, otherwise returns [defaultValue].
   @override
   Future<FlagEvaluationResult<String>> getStringFlag(
     String flagKey,
