@@ -189,6 +189,44 @@ await OpenFeature.instance.close();
 
 ---
 
+## In-Memory Provider & Console Logging Hook (Local Development & Testing)
+
+This SDK includes utilities for rapid local development and test suites:
+
+### InMemoryProvider
+
+The `InMemoryProvider` lets you define and update feature flags in-memory at runtime. This is ideal for unit tests or local development, where you want to avoid network calls or external dependencies.
+
+**Usage Example:**
+
+```dart
+import 'package:intellitoggle_openfeature/intellitoggle_openfeature.dart';
+
+void main() async {
+  // Create and register the in-memory provider
+  final provider = InMemoryProvider();
+  provider.setFlag('my-flag', true);
+  OpenFeature.instance.setProvider(provider);
+
+  // Evaluate a flag
+  final client = OpenFeature.instance.getClient('test');
+  final value = await client.getBooleanValue('my-flag', false);
+  print('my-flag = $value'); // prints: my-flag = true
+
+  // Listen for configuration changes
+  provider.events.listen((event) {
+    if (event.type == IntelliToggleEventType.configurationChanged) {
+      print('Flags updated: ${event.flags}');
+    }
+  });
+
+  // Update a flag at runtime
+  provider.setFlag('my-flag', false); // Triggers configurationChanged event
+}
+```
+
+---
+
 ## Contributing
 
 We welcome contributions! See [`CONTRIBUTING.md`](https://github.com/intellitoggle/openfeature-dart) for guidelines.
