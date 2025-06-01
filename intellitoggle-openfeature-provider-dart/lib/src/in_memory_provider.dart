@@ -90,12 +90,30 @@ class InMemoryProvider implements FeatureProvider {
     Map<String, dynamic>? context,
   }) async {
     final value = _flags[flagKey];
+    if (!_flags.containsKey(flagKey)) {
+      return FlagEvaluationResult<bool>(
+        flagKey: flagKey,
+        value: defaultValue,
+        evaluatedAt: DateTime.now(),
+        evaluatorId: name,
+        reason: 'DEFAULT',
+      );
+    }
+    if (value is! bool) {
+      return FlagEvaluationResult<bool>(
+        flagKey: flagKey,
+        value: defaultValue,
+        evaluatedAt: DateTime.now(),
+        evaluatorId: name,
+        reason: 'ERROR',
+      );
+    }
     return FlagEvaluationResult<bool>(
       flagKey: flagKey,
-      value: value is bool ? value : defaultValue,
+      value: value,
       evaluatedAt: DateTime.now(),
       evaluatorId: name,
-      reason: value != null ? 'STATIC' : 'DEFAULT',
+      reason: 'STATIC',
     );
   }
 
@@ -109,12 +127,30 @@ class InMemoryProvider implements FeatureProvider {
     Map<String, dynamic>? context,
   }) async {
     final value = _flags[flagKey];
+    if (!_flags.containsKey(flagKey)) {
+      return FlagEvaluationResult<String>(
+        flagKey: flagKey,
+        value: defaultValue,
+        evaluatedAt: DateTime.now(),
+        evaluatorId: name,
+        reason: 'DEFAULT',
+      );
+    }
+    if (value is! String) {
+      return FlagEvaluationResult<String>(
+        flagKey: flagKey,
+        value: defaultValue,
+        evaluatedAt: DateTime.now(),
+        evaluatorId: name,
+        reason: 'ERROR',
+      );
+    }
     return FlagEvaluationResult<String>(
       flagKey: flagKey,
-      value: value is String ? value : defaultValue,
+      value: value,
       evaluatedAt: DateTime.now(),
       evaluatorId: name,
-      reason: value != null ? 'STATIC' : 'DEFAULT',
+      reason: 'STATIC',
     );
   }
 
@@ -128,12 +164,30 @@ class InMemoryProvider implements FeatureProvider {
     Map<String, dynamic>? context,
   }) async {
     final value = _flags[flagKey];
+    if (!_flags.containsKey(flagKey)) {
+      return FlagEvaluationResult<int>(
+        flagKey: flagKey,
+        value: defaultValue,
+        evaluatedAt: DateTime.now(),
+        evaluatorId: name,
+        reason: 'DEFAULT',
+      );
+    }
+    if (value is! int) {
+      return FlagEvaluationResult<int>(
+        flagKey: flagKey,
+        value: defaultValue,
+        evaluatedAt: DateTime.now(),
+        evaluatorId: name,
+        reason: 'ERROR',
+      );
+    }
     return FlagEvaluationResult<int>(
       flagKey: flagKey,
-      value: value is int ? value : defaultValue,
+      value: value,
       evaluatedAt: DateTime.now(),
       evaluatorId: name,
-      reason: value != null ? 'STATIC' : 'DEFAULT',
+      reason: 'STATIC',
     );
   }
 
@@ -147,12 +201,30 @@ class InMemoryProvider implements FeatureProvider {
     Map<String, dynamic>? context,
   }) async {
     final value = _flags[flagKey];
+    if (!_flags.containsKey(flagKey)) {
+      return FlagEvaluationResult<double>(
+        flagKey: flagKey,
+        value: defaultValue,
+        evaluatedAt: DateTime.now(),
+        evaluatorId: name,
+        reason: 'DEFAULT',
+      );
+    }
+    if (value is! double) {
+      return FlagEvaluationResult<double>(
+        flagKey: flagKey,
+        value: defaultValue,
+        evaluatedAt: DateTime.now(),
+        evaluatorId: name,
+        reason: 'ERROR',
+      );
+    }
     return FlagEvaluationResult<double>(
       flagKey: flagKey,
-      value: value is double ? value : defaultValue,
+      value: value,
       evaluatedAt: DateTime.now(),
       evaluatorId: name,
-      reason: value != null ? 'STATIC' : 'DEFAULT',
+      reason: 'STATIC',
     );
   }
 
@@ -166,12 +238,30 @@ class InMemoryProvider implements FeatureProvider {
     Map<String, dynamic>? context,
   }) async {
     final value = _flags[flagKey];
+    if (!_flags.containsKey(flagKey)) {
+      return FlagEvaluationResult<Map<String, dynamic>>(
+        flagKey: flagKey,
+        value: defaultValue,
+        evaluatedAt: DateTime.now(),
+        evaluatorId: name,
+        reason: 'DEFAULT',
+      );
+    }
+    if (value is! Map<String, dynamic>) {
+      return FlagEvaluationResult<Map<String, dynamic>>(
+        flagKey: flagKey,
+        value: defaultValue,
+        evaluatedAt: DateTime.now(),
+        evaluatorId: name,
+        reason: 'ERROR',
+      );
+    }
     return FlagEvaluationResult<Map<String, dynamic>>(
       flagKey: flagKey,
-      value: value is Map<String, dynamic> ? value : defaultValue,
+      value: value,
       evaluatedAt: DateTime.now(),
       evaluatorId: name,
-      reason: value != null ? 'STATIC' : 'DEFAULT',
+      reason: 'STATIC',
     );
   }
 }
