@@ -2,8 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:intellitoggle_openfeature/intellitoggle_openfeature.dart';
 
-/// OREP-compliant HTTP server for remote flag evaluation.
-/// Supports boolean, string, integer, double, and object flags.
 Future<void> main() async {
   final provider = InMemoryProvider();
 
@@ -15,11 +13,12 @@ Future<void> main() async {
   provider.setFlag('object-flag', {'foo': 'bar', 'enabled': true});
 
   final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 8080);
-  print('OREP server running on http://localhost:8080');
+  print('OREP/OPTSP server running on http://localhost:8080');
 
   await for (HttpRequest req in server) {
-    // OREP: /v1/flags/{flagKey}/evaluate
     final segments = req.uri.pathSegments;
+
+    // --- OREP: Flag Evaluation ---
     if (req.method == 'POST' &&
         segments.length == 4 &&
         segments[0] == 'v1' &&
@@ -67,14 +66,95 @@ Future<void> main() async {
         }));
       }
       await req.response.close();
-    } else {
-      req.response.statusCode = 404;
-      await req.response.close();
+      continue;
     }
+
+    // --- OPTSP: Provider Metadata ---
+    if (req.method == 'GET' &&
+        segments.length == 3 &&
+        segments[0] == 'v1' &&
+        segments[1] == 'provider' &&
+        segments[2] == 'metadata') {
+      req.response.statusCode = 200;
+      req.response.headers.contentType = ContentType.json;
+      req.response.write(jsonEncode({
+        'name': provider.name,
+        'version': '1.0.0', // Set your provider version here
+        'capabilities': ['seed', 'reset', 'shutdown', 'evaluate'],
+      }));
+      await req.response.close();
+      continue;
+    }
+
+    // --- OPTSP: Seed Flags ---
+    if (req.method == 'POST' &&
+        segments.length == 3 &&
+        segments[0] == 'v1' &&
+        segments[1] == 'provider' &&
+        segments[2] == 'seed') {
+      final body = await utf8.decoder.bind(req).join();
+      final Map<String, dynamic> payload = body.isNotEmpty ? jsonDecode(body) : {};
+      final flags = payload['flags'] as Map<String, dynamic>? ?? {};
+      provider.clearFlags();
+      flags.forEach((k, v) => provider.setFlag(k, v));
+      req.response.statusCode = 200;
+      req.response.headers.contentType = ContentType.json;
+      req.response.write(jsonEncode({'status': 'ok'}));
+      await req.response.close();
+      continue;
+    }
+
+    // --- OPTSP: Reset Provider ---
+    if (req.method == 'POST' &&
+        segments.length == 3 &&
+        segments[0] == 'v1' &&
+        segments[1] == 'provider' &&
+        segments[2] == 'reset') {
+      provider.clearFlags();
+      req.response.statusCode = 200;
+      req.response.headers.contentType = ContentType.json;
+      req.response.write(jsonEncode({'status': 'ok'}));
+      await req.response.close();
+      continue;
+    }
+
+    // --- OPTSP: Shutdown Provider ---
+    if (req.method == 'POST' &&
+        segments.length == 3 &&
+        segments[0] == 'v1' &&
+        segments[1] == 'provider' &&
+        segments[2] == 'shutdown') {
+      await provider.shutdown();
+      req.response.statusCode = 200;
+      req.response.headers.contentType = ContentType.json;
+      req.response.write(jsonEncode({'status': 'ok'}));
+      await req.response.close();
+      // Optionally, shut down the HTTP server as well
+      await server.close(force: true);
+      break;
+    }
+
+    // --- OPTSP: Provider State (optional) ---
+    if (req.method == 'GET' &&
+        segments.length == 3 &&
+        segments[0] == 'v1' &&
+        segments[1] == 'provider' &&
+        segments[2] == 'state') {
+      req.response.statusCode = 200;
+      req.response.headers.contentType = ContentType.json;
+      req.response.write(jsonEncode({
+        'state': provider.state.toString(),
+      }));
+      await req.response.close();
+      continue;
+    }
+
+    // --- 404 Not Found ---
+    req.response.statusCode = 404;
+    await req.response.close();
   }
 }
 
-/// Infer OREP type from Dart value.
 String _inferType(dynamic value) {
   if (value is bool) return 'boolean';
   if (value is int) return 'integer';
@@ -84,7 +164,6 @@ String _inferType(dynamic value) {
   return 'string';
 }
 
-/// Format OREP-compliant response.
 Map<String, dynamic> _orepResponse(dynamic result, String type) {
   return {
     'flagKey': result.flagKey,
