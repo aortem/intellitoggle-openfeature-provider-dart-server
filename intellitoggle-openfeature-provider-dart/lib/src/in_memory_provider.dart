@@ -66,7 +66,12 @@ class InMemoryProvider implements FeatureProvider {
 
   @override
   Future<void> initialize([Map<String, dynamic>? context]) async {
-    _state = ProviderState.READY;
+    try {
+      _state = ProviderState.READY;
+    } catch (e) {
+      _state = ProviderState.ERROR;
+      _eventController.add(IntelliToggleEvent.error(e.toString()));
+    }
     print('[InMemoryProvider] Initialized, state = $_state');
     await Future.delayed(Duration.zero);
   }
@@ -76,8 +81,13 @@ class InMemoryProvider implements FeatureProvider {
 
   @override
   Future<void> shutdown() async {
-    _state = ProviderState.NOT_READY;
-    await _eventController.close();
+    try {
+      _state = ProviderState.NOT_READY;
+      await _eventController.close();
+    } catch (e) {
+      _state = ProviderState.ERROR;
+      _eventController.add(IntelliToggleEvent.error(e.toString()));
+    }
   }
 
   /// Resolve a boolean flag.
