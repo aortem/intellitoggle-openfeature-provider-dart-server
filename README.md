@@ -256,6 +256,25 @@ curl -X POST http://localhost:8080/v1/flags/bool-flag/evaluate \
   "evaluatorId": "InMemoryProvider"
 }
 ```
+> **Security Note:** The OREP/OPTSP server does not implement authentication or rate limiting. Do not expose it to untrusted networks.
+
+## OREP Error Responses
+
+If a request is invalid, the server returns:
+
+```json
+{
+  "error": "Invalid JSON",
+  "details": "FormatException: Unexpected character..."
+}
+```
+
+## Configuration
+
+You can configure the OREP server with environment variables:
+
+- `OREP_HOST` (default: 0.0.0.0)
+- `OREP_PORT` (default: 8080)
 ---
 
 ## OPTSP (OpenFeature Provider Test Suite Protocol) API
@@ -280,6 +299,19 @@ curl -X POST http://localhost:8080/v1/provider/reset
 
 ```bash
 curl http://localhost:8080/v1/provider/metadata
+```
+
+---
+
+## Security
+
+All OREP/OPTSP endpoints require a Bearer token for authentication.
+
+Set the token via the `OREP_AUTH_TOKEN` environment variable (default: `changeme-token`).
+
+Example request:
+```bash
+curl -H "Authorization: Bearer changeme-token" ...
 ```
 
 ---
