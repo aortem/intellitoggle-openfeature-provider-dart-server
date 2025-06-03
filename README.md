@@ -224,6 +224,95 @@ void main() async {
   provider.setFlag('my-flag', false); // Triggers configurationChanged event
 }
 ```
+---
+## OREP (OpenFeature Remote Evaluation Protocol) API
+
+This provider exposes an [OREP](https://openfeature.dev/specification/appendix-c) HTTP API for remote flag evaluation.
+
+### Starting the OREP Server
+
+```bash
+dart run bin/orep_server.dart
+```
+
+The server will listen on `http://localhost:8080`.
+
+### Example: Evaluate a Boolean Flag via OREP
+
+```bash
+curl -X POST http://localhost:8080/v1/flags/bool-flag/evaluate \
+  -H "Content-Type: application/json" \
+  -d '{"defaultValue": false, "type": "boolean", "context": {}}'
+```
+
+**Response:**
+```json
+{
+  "flagKey": "bool-flag",
+  "type": "boolean",
+  "value": true,
+  "reason": "STATIC",
+  "evaluatedAt": "2025-06-02T12:34:56.789Z",
+  "evaluatorId": "InMemoryProvider"
+}
+```
+> **Security Note:** The OREP/OPTSP server does not implement authentication or rate limiting. Do not expose it to untrusted networks.
+
+## OREP Error Responses
+
+If a request is invalid, the server returns:
+
+```json
+{
+  "error": "Invalid JSON",
+  "details": "FormatException: Unexpected character..."
+}
+```
+
+## Configuration
+
+You can configure the OREP server with environment variables:
+
+- `OREP_HOST` (default: 0.0.0.0)
+- `OREP_PORT` (default: 8080)
+---
+
+## OPTSP (OpenFeature Provider Test Suite Protocol) API
+
+This provider supports the [OPTSP](https://openfeature.dev/specification/appendix-d) endpoints for automated conformance testing.
+
+### Example: Seed Flags
+
+```bash
+curl -X POST http://localhost:8080/v1/provider/seed \
+  -H "Content-Type: application/json" \
+  -d '{"flags": {"my-flag": true, "other-flag": "hello"}}'
+```
+
+### Example: Reset Provider
+
+```bash
+curl -X POST http://localhost:8080/v1/provider/reset
+```
+
+### Example: Get Provider Metadata
+
+```bash
+curl http://localhost:8080/v1/provider/metadata
+```
+
+---
+
+## Security
+
+All OREP/OPTSP endpoints require a Bearer token for authentication.
+
+Set the token via the `OREP_AUTH_TOKEN` environment variable (default: `changeme-token`).
+
+Example request:
+```bash
+curl -H "Authorization: Bearer changeme-token" ...
+```
 
 ---
 
