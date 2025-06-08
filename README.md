@@ -36,7 +36,7 @@ This provider enables using IntelliToggle’s feature management platform with t
 
 ## Supported Dart Versions
 
-Compatible with Dart **3.7.3** and above.
+Compatible with Dart **3.8.1** and above.
 
 ---
 
