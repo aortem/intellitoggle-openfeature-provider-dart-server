@@ -1,6 +1,7 @@
 stages:
   - setup
   - validation
+  - gherkin-test
 # - unit_testing
 # - frontend
 # - backend
@@ -77,3 +78,15 @@ debug_merge_request:
 #       when: always
 #     # Fallback: Skip if no condition matches
 #     - when: never
+
+openfeature_gherkin_conformance:
+  stage: gherkin-test
+  image: dart:stable
+  script:
+    - cd intellitoggle-openfeature-provider-dart
+    - dart pub get
+    - dart test test/gherkin/gherkin_suite_test.dart --concurrency=1
+  artifacts:
+    when: always
+    reports:
+      junit: build/test-results.xml
