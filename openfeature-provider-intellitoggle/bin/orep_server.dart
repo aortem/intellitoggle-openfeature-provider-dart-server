@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:intellitoggle_openfeature/intellitoggle_openfeature.dart';
+//import 'package:intellitoggle_openfeature/intellitoggle_openfeature.dart';
 
 Future<void> main() async {
   final provider = InMemoryProvider();
@@ -13,16 +13,20 @@ Future<void> main() async {
   provider.setFlag('object-flag', {'foo': 'bar', 'enabled': true});
 
   final host = Platform.environment['OREP_HOST'] ?? '0.0.0.0';
-  final port = int.tryParse(Platform.environment['OREP_PORT'] ?? '8080') ?? 8080;
+  final port =
+      int.tryParse(Platform.environment['OREP_PORT'] ?? '8080') ?? 8080;
   final server = await HttpServer.bind(host, port);
   print('OREP/OPTSP server running on http://$host:$port');
 
-  final requiredToken = Platform.environment['OREP_AUTH_TOKEN'] ?? 'changeme-token';
+  final requiredToken =
+      Platform.environment['OREP_AUTH_TOKEN'] ?? 'changeme-token';
 
   await for (HttpRequest req in server) {
     // --- Simple Bearer token authentication ---
     final authHeader = req.headers.value('authorization');
-    if (authHeader == null || !authHeader.startsWith('Bearer ') || authHeader.substring(7) != requiredToken) {
+    if (authHeader == null ||
+        !authHeader.startsWith('Bearer ') ||
+        authHeader.substring(7) != requiredToken) {
       req.response.statusCode = 401;
       req.response.headers.contentType = ContentType.json;
       req.response.write(jsonEncode({'error': 'Unauthorized'}));
@@ -47,24 +51,43 @@ Future<void> main() async {
         } catch (e) {
           req.response.statusCode = 400;
           req.response.headers.contentType = ContentType.json;
-          req.response.write(jsonEncode({'error': 'Invalid JSON', 'details': e.toString()}));
+          req.response.write(
+            jsonEncode({'error': 'Invalid JSON', 'details': e.toString()}),
+          );
           await req.response.close();
           continue;
         }
 
-        if (!payload.containsKey('defaultValue') || !payload.containsKey('type')) {
+        if (!payload.containsKey('defaultValue') ||
+            !payload.containsKey('type')) {
           req.response.statusCode = 400;
           req.response.headers.contentType = ContentType.json;
-          req.response.write(jsonEncode({'error': 'Missing required fields: defaultValue and type'}));
+          req.response.write(
+            jsonEncode({
+              'error': 'Missing required fields: defaultValue and type',
+            }),
+          );
           await req.response.close();
           continue;
         }
         final type = payload['type'];
-        const allowedTypes = ['boolean', 'string', 'integer', 'double', 'float', 'object'];
+        const allowedTypes = [
+          'boolean',
+          'string',
+          'integer',
+          'double',
+          'float',
+          'object',
+        ];
         if (!allowedTypes.contains(type)) {
           req.response.statusCode = 400;
           req.response.headers.contentType = ContentType.json;
-          req.response.write(jsonEncode({'error': 'Invalid flag type', 'allowedTypes': allowedTypes}));
+          req.response.write(
+            jsonEncode({
+              'error': 'Invalid flag type',
+              'allowedTypes': allowedTypes,
+            }),
+          );
           await req.response.close();
           continue;
         }
@@ -73,27 +96,51 @@ Future<void> main() async {
         final defaultValue = payload['defaultValue'];
 
         // In orep_server.dart, before flag evaluation:
-        final processedContext = processContext(context); // Use your context processor
+        final processedContext = processContext(
+          context,
+        ); // Use your context processor
         // Then pass processedContext to provider.get*Flag(...)
 
         dynamic result;
         try {
           switch (type) {
             case 'boolean':
-              result = await provider.getBooleanFlag(flagKey, defaultValue == null ? false : defaultValue as bool, context: processedContext);
+              result = await provider.getBooleanFlag(
+                flagKey,
+                defaultValue == null ? false : defaultValue as bool,
+                context: processedContext,
+              );
               break;
             case 'string':
-              result = await provider.getStringFlag(flagKey, defaultValue == null ? '' : defaultValue as String, context: processedContext);
+              result = await provider.getStringFlag(
+                flagKey,
+                defaultValue == null ? '' : defaultValue as String,
+                context: processedContext,
+              );
               break;
             case 'integer':
-              result = await provider.getIntegerFlag(flagKey, defaultValue == null ? 0 : defaultValue as int, context: processedContext);
+              result = await provider.getIntegerFlag(
+                flagKey,
+                defaultValue == null ? 0 : defaultValue as int,
+                context: processedContext,
+              );
               break;
             case 'double':
             case 'float':
-              result = await provider.getDoubleFlag(flagKey, defaultValue == null ? 0.0 : (defaultValue as num).toDouble(), context: processedContext);
+              result = await provider.getDoubleFlag(
+                flagKey,
+                defaultValue == null ? 0.0 : (defaultValue as num).toDouble(),
+                context: processedContext,
+              );
               break;
             case 'object':
-              result = await provider.getObjectFlag(flagKey, defaultValue == null ? <String, dynamic>{} : defaultValue as Map<String, dynamic>, context: processedContext);
+              result = await provider.getObjectFlag(
+                flagKey,
+                defaultValue == null
+                    ? <String, dynamic>{}
+                    : defaultValue as Map<String, dynamic>,
+                context: processedContext,
+              );
               break;
             default:
               throw Exception('Unsupported flag type: $type');
@@ -104,10 +151,9 @@ Future<void> main() async {
         } catch (e) {
           req.response.statusCode = 400;
           req.response.headers.contentType = ContentType.json;
-          req.response.write(jsonEncode({
-            'error': 'Evaluation failed',
-            'details': e.toString(),
-          }));
+          req.response.write(
+            jsonEncode({'error': 'Evaluation failed', 'details': e.toString()}),
+          );
         }
         await req.response.close();
         continue;
@@ -121,11 +167,13 @@ Future<void> main() async {
           segments[2] == 'metadata') {
         req.response.statusCode = 200;
         req.response.headers.contentType = ContentType.json;
-        req.response.write(jsonEncode({
-          'name': provider.name,
-          'version': '1.0.0', // Set your provider version here
-          'capabilities': ['seed', 'reset', 'shutdown', 'evaluate'],
-        }));
+        req.response.write(
+          jsonEncode({
+            'name': provider.name,
+            'version': '1.0.0', // Set your provider version here
+            'capabilities': ['seed', 'reset', 'shutdown', 'evaluate'],
+          }),
+        );
         await req.response.close();
         continue;
       }
@@ -137,7 +185,9 @@ Future<void> main() async {
           segments[1] == 'provider' &&
           segments[2] == 'seed') {
         final body = await utf8.decoder.bind(req).join();
-        final Map<String, dynamic> payload = body.isNotEmpty ? jsonDecode(body) : {};
+        final Map<String, dynamic> payload = body.isNotEmpty
+            ? jsonDecode(body)
+            : {};
         final flags = payload['flags'] as Map<String, dynamic>? ?? {};
         provider.clearFlags();
         flags.forEach((k, v) => provider.setFlag(k, v));
@@ -186,9 +236,7 @@ Future<void> main() async {
           segments[2] == 'state') {
         req.response.statusCode = 200;
         req.response.headers.contentType = ContentType.json;
-        req.response.write(jsonEncode({
-          'state': provider.state.toString(),
-        }));
+        req.response.write(jsonEncode({'state': provider.state.toString()}));
         await req.response.close();
         continue;
       }
@@ -199,11 +247,13 @@ Future<void> main() async {
     } catch (e, st) {
       req.response.statusCode = 400;
       req.response.headers.contentType = ContentType.json;
-      req.response.write(jsonEncode({
-        'error': 'Bad Request',
-        'details': e.toString(),
-        'stack': st.toString(),
-      }));
+      req.response.write(
+        jsonEncode({
+          'error': 'Bad Request',
+          'details': e.toString(),
+          'stack': st.toString(),
+        }),
+      );
       await req.response.close();
     }
   }
