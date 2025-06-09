@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// IntelliToggle provider for OpenFeature Dart Server SDK
-library intellitoggle_openfeature;
+library openfeature_provider_intellitoggle;
 
 export 'src/provider.dart';
 export 'src/client.dart';

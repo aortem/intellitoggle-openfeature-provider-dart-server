@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-//import 'package:intellitoggle_openfeature/intellitoggle_openfeature.dart';
+//import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 
 Future<void> main() async {
   final provider = InMemoryProvider();

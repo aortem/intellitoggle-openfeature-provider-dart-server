@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:intellitoggle_openfeature/intellitoggle_openfeature.dart';
+import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 import 'package:openfeature_dart_server_sdk/hooks.dart';
 
 void main() {
@@ -29,14 +29,18 @@ void main() {
       provider.setFlag('foo', 1);
       await Future.delayed(Duration(milliseconds: 10));
       expect(
-        events.any((e) => e.type == IntelliToggleEventType.configurationChanged),
+        events.any(
+          (e) => e.type == IntelliToggleEventType.configurationChanged,
+        ),
         isTrue,
       );
 
       provider.removeFlag('foo');
       await Future.delayed(Duration(milliseconds: 10));
       expect(
-        events.where((e) => e.type == IntelliToggleEventType.configurationChanged).length,
+        events
+            .where((e) => e.type == IntelliToggleEventType.configurationChanged)
+            .length,
         greaterThan(1),
       );
     });
@@ -67,9 +71,25 @@ void main() {
       await hook.after(context);
       await hook.finally_(context);
 
-      expect(logger.messages.any((m) => m.contains('BEFORE: Evaluating flag "test-flag"')), true);
-      expect(logger.messages.any((m) => m.contains('AFTER: Flag "test-flag" evaluation completed.')), true);
-      expect(logger.messages.any((m) => m.contains('FINALLY: Finished evaluation for flag "test-flag"')), true);
+      expect(
+        logger.messages.any(
+          (m) => m.contains('BEFORE: Evaluating flag "test-flag"'),
+        ),
+        true,
+      );
+      expect(
+        logger.messages.any(
+          (m) => m.contains('AFTER: Flag "test-flag" evaluation completed.'),
+        ),
+        true,
+      );
+      expect(
+        logger.messages.any(
+          (m) =>
+              m.contains('FINALLY: Finished evaluation for flag "test-flag"'),
+        ),
+        true,
+      );
     });
 
     test('logs error and finally on error', () async {
@@ -87,8 +107,19 @@ void main() {
       await hook.error(context);
       await hook.finally_(context);
 
-      expect(logger.messages.any((m) => m.contains('ERROR: Flag "test-flag" evaluation failed.')), true);
-      expect(logger.messages.any((m) => m.contains('FINALLY: Finished evaluation for flag "test-flag"')), true);
+      expect(
+        logger.messages.any(
+          (m) => m.contains('ERROR: Flag "test-flag" evaluation failed.'),
+        ),
+        true,
+      );
+      expect(
+        logger.messages.any(
+          (m) =>
+              m.contains('FINALLY: Finished evaluation for flag "test-flag"'),
+        ),
+        true,
+      );
     });
   });
 }
