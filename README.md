@@ -49,7 +49,7 @@ Add to your server-side `pubspec.yaml`:
 ```yaml
 dependencies:
   open_feature: ^0.1.0
-  intellitoggle_openfeature: ^0.0.1
+  openfeature_provider_intellitoggle: ^0.0.1
 ```
 
 Then run:
@@ -62,7 +62,7 @@ dart pub get
 
 ```dart
 import 'package:open_feature/open_feature.dart';
-import 'package:intellitoggle_openfeature/intellitoggle_provider.dart';
+import 'package:openfeature_provider_intellitoggle/intellitoggle_provider.dart';
 
 void main() async {
   // Create and register the IntelliToggle provider
@@ -200,7 +200,7 @@ The `InMemoryProvider` lets you define and update feature flags in-memory at run
 **Usage Example:**
 
 ```dart
-import 'package:intellitoggle_openfeature/intellitoggle_openfeature.dart';
+import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 
 void main() async {
   // Create and register the in-memory provider
