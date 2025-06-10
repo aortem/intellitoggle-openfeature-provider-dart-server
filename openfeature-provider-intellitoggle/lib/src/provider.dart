@@ -30,14 +30,8 @@ class IntelliToggleProvider implements FeatureProvider {
   late final IntelliToggleUtils _utils;
   late final IntelliToggleContextProcessor _contextProcessor;
   late final IntelliToggleEventEmitter _eventEmitter;
-
-  /// Current provider state for lifecycle management
   ProviderState _state = ProviderState.NOT_READY;
-
-  /// Timer for polling configuration changes
   Timer? _pollingTimer;
-
-  /// Completer to track initialization status
   final Completer<void> _initCompleter = Completer<void>();
 
   /// Creates a new IntelliToggle provider instance
@@ -61,6 +55,9 @@ class IntelliToggleProvider implements FeatureProvider {
   /// Provider name identifier
   @override
   String get name => 'IntelliToggle';
+
+  @override
+  ProviderMetadata get metadata => ProviderMetadata(name: 'IntelliToggle');
 
   /// Current provider state (READY, ERROR, NOT_READY, etc.)
   @override
@@ -98,7 +95,7 @@ class IntelliToggleProvider implements FeatureProvider {
     } catch (error) {
       // Handle initialization failure
       _state = ProviderState.ERROR;
-      _eventEmitter.emit(IntelliToggleEvent.error(error.toString()));
+      _eventEmitter.emit(IntelliToggleEvent.error('Provider error occurred'));
       _initCompleter.completeError(error);
       rethrow;
     }
@@ -113,10 +110,8 @@ class IntelliToggleProvider implements FeatureProvider {
   /// Shutdown the provider and cleanup resources
   @override
   Future<void> shutdown() async {
-    // Cancel polling timer
     _pollingTimer?.cancel();
-
-    // Update state and cleanup
+    _pollingTimer = null;
     _state = ProviderState.NOT_READY;
     _eventEmitter.dispose();
     _httpClient.close();
@@ -194,48 +189,45 @@ class IntelliToggleProvider implements FeatureProvider {
     String valueType,
   ) async {
     try {
-      // Ensure provider is ready before evaluation
       if (_state != ProviderState.READY) {
         await _initCompleter.future;
       }
-
-      // Process context according to IntelliToggle requirements
       final processedContext = _contextProcessor.processContext(context ?? {});
-
-      // Call IntelliToggle API for flag evaluation
       final response = await _utils.evaluateFlag(
         _sdkKey,
         flagKey,
         processedContext,
         valueType,
       );
-
-      // Create successful evaluation result
+      String? errorCode;
+      if (response['errorCode'] != null) {
+        errorCode = response['errorCode'];
+      } else if (response['reason'] == 'FLAG_NOT_FOUND') {
+        errorCode = 'FLAG_NOT_FOUND';
+      } else if (response['reason'] == 'TYPE_MISMATCH') {
+        errorCode = 'TYPE_MISMATCH';
+      }
       final result = FlagEvaluationResult<T>(
         flagKey: flagKey,
         value: response['value'] as T,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: response['reason'] ?? 'UNKNOWN',
+        errorCode: errorCode,
       );
-
-      // Emit flag evaluation event for monitoring
       _eventEmitter.emit(
         IntelliToggleEvent.flagEvaluated(flagKey, result.value, result.reason),
       );
-
       return result;
     } catch (error) {
-      // Emit error event
-      _eventEmitter.emit(IntelliToggleEvent.error(error.toString()));
-
-      // Return default value on any error
+      _eventEmitter.emit(IntelliToggleEvent.error('Provider error occurred'));
       return FlagEvaluationResult<T>(
         flagKey: flagKey,
         value: defaultValue,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
+        errorCode: 'GENERAL',
       );
     }
   }

@@ -1,16 +1,17 @@
 import 'dart:async';
-import 'package:open_feature/open_feature.dart';
+import 'package:openfeature_dart_server_sdk/openfeature_dart_server_sdk.dart';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 
 Future<void> main() async {
   // 1. Configure and register the provider
-  final options = IntelliToggleOptions(
+  final provider = IntelliToggleProvider(
     sdkKey: 'YOUR_SDK_KEY',
-    baseUri: Uri.parse('https://api.intellitoggle.com'),
-    timeout: const Duration(seconds: 5),
+    options: IntelliToggleOptions(
+      baseUri: Uri.parse('https://api.intellitoggle.com'),
+      timeout: const Duration(seconds: 5),
+    ),
   );
-  final provider = IntelliToggleProvider(options);
-  await OpenFeature.instance.setProviderAndWait(provider);
+  await OpenFeatureAPI().setProvider(provider);
 
   // 2. Create a client scoped to your service
   final client = IntelliToggleClient(namespace: 'my-service');
@@ -38,6 +39,6 @@ Future<void> main() async {
   print('welcome-message = $welcomeText');
 
   // 5. Clean up
-  await OpenFeature.instance.close();
+  await provider.shutdown();
   print('Shut down provider.');
 }

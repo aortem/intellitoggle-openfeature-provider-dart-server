@@ -1,9 +1,6 @@
 import 'package:openfeature_dart_server_sdk/hooks.dart';
 
 /// A hook that logs evaluation lifecycle events to the console.
-///
-/// This hook is useful for debugging and local development. It prints
-/// messages to stdout at each stage of the flag evaluation lifecycle.
 class ConsoleLoggingHook extends Hook {
   /// Allows overriding the print function for testing.
   void Function(String message) logFunction = print; // Default to print

@@ -161,4 +161,27 @@ class IntelliToggleOptions {
       cacheTtl: const Duration(minutes: 1), // Enable short-term caching
     );
   }
+
+  /// In-memory cache for flag evaluations (bounded by cacheTtl)
+  final Map<String, _CacheEntry> _flagCache = {};
+  static class _CacheEntry {
+    final dynamic value;
+    final DateTime expiresAt;
+    _CacheEntry(this.value, this.expiresAt);
+  }
+  dynamic getCachedFlag(String cacheKey) {
+    final entry = _flagCache[cacheKey];
+    if (entry != null && entry.expiresAt.isAfter(DateTime.now())) {
+      return entry.value;
+    }
+    return null;
+  }
+  void setCachedFlag(String cacheKey, dynamic value, Duration ttl) {
+    if (ttl > Duration.zero) {
+      _flagCache[cacheKey] = _CacheEntry(value, DateTime.now().add(ttl));
+    }
+  }
+  void clearFlagCache() {
+    _flagCache.clear();
+  }
 }

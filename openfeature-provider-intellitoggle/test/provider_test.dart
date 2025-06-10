@@ -24,7 +24,7 @@ void main() {
 
     test('emits configuration changed event on set and remove', () async {
       final events = <IntelliToggleEvent>[];
-      provider.events.listen(events.add);
+      final sub = provider.events.listen(events.add);
 
       provider.setFlag('foo', 1);
       await Future.delayed(Duration(milliseconds: 10));
@@ -43,6 +43,7 @@ void main() {
             .length,
         greaterThan(1),
       );
+      await sub.cancel();
     });
   });
 
