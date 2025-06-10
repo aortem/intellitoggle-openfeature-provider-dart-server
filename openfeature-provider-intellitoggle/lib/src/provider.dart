@@ -54,10 +54,8 @@ class IntelliToggleProvider implements FeatureProvider {
 
   /// Provider name identifier
   @override
+  // ProviderMetadata is not supported in this SDK version; use only name
   String get name => 'IntelliToggle';
-
-  @override
-  ProviderMetadata get metadata => ProviderMetadata(name: 'IntelliToggle');
 
   /// Current provider state (READY, ERROR, NOT_READY, etc.)
   @override
@@ -199,21 +197,12 @@ class IntelliToggleProvider implements FeatureProvider {
         processedContext,
         valueType,
       );
-      String? errorCode;
-      if (response['errorCode'] != null) {
-        errorCode = response['errorCode'];
-      } else if (response['reason'] == 'FLAG_NOT_FOUND') {
-        errorCode = 'FLAG_NOT_FOUND';
-      } else if (response['reason'] == 'TYPE_MISMATCH') {
-        errorCode = 'TYPE_MISMATCH';
-      }
       final result = FlagEvaluationResult<T>(
         flagKey: flagKey,
         value: response['value'] as T,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: response['reason'] ?? 'UNKNOWN',
-        errorCode: errorCode,
       );
       _eventEmitter.emit(
         IntelliToggleEvent.flagEvaluated(flagKey, result.value, result.reason),
@@ -227,7 +216,6 @@ class IntelliToggleProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
-        errorCode: 'GENERAL',
       );
     }
   }

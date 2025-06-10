@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:openfeature_dart_server_sdk/feature_provider.dart';
 import 'events.dart';
 
-/// In-memory feature flag provider for testing and local development.
+/// An in-memory feature flag provider for testing and local development.
 ///
 /// This provider allows you to set, update, and remove feature flags at runtime,
 /// storing them in a simple in-memory map. It is useful for unit tests and local
@@ -30,9 +30,6 @@ class InMemoryProvider implements FeatureProvider {
 
   @override
   ProviderConfig get config => ProviderConfig();
-
-  @override
-  ProviderMetadata get metadata => ProviderMetadata(name: 'InMemoryProvider');
 
   /// Set or update a flag value.
   ///
@@ -110,7 +107,6 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'DEFAULT',
-        errorCode: 'FLAG_NOT_FOUND',
       );
     }
     if (value is! bool) {
@@ -120,7 +116,6 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
-        errorCode: 'TYPE_MISMATCH',
       );
     }
     return FlagEvaluationResult<bool>(

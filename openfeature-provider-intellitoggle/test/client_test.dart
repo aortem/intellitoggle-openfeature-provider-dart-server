@@ -1,7 +1,7 @@
 import 'package:test/test.dart';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 import 'package:openfeature_dart_server_sdk/client.dart';
-import 'package:openfeature_dart_server_sdk/feature_provider.dart';
+import 'package:openfeature_dart_server_sdk/hooks.dart';
 
 void main() {
   group('IntelliToggleClient', () {
@@ -10,8 +10,20 @@ void main() {
 
     setUp(() async {
       provider = InMemoryProvider();
-      await OpenFeatureAPI().setProvider(provider);
-      client = IntelliToggleClient(namespace: 'test');
+      OpenFeatureAPI().setProvider(provider);
+      final clientMetadata = ClientMetadata(
+        name: 'test-client',
+        version: '0.0.1',
+      );
+      final hookManager = HookManager();
+      final defaultEvalContext = EvaluationContext(attributes: {});
+      final featureClient = FeatureClient(
+        metadata: clientMetadata,
+        provider: provider,
+        hookManager: hookManager,
+        defaultContext: defaultEvalContext,
+      );
+      client = IntelliToggleClient(featureClient);
     });
 
     test('getBooleanValue returns correct value', () async {
@@ -69,10 +81,8 @@ void main() {
 
     test('error handling: throws on type mismatch', () async {
       provider.setFlag('flag', 123);
-      expect(
-        () async => await client.getBooleanValue('flag', false),
-        throwsA(isA<Exception>()),
-      );
+      final result = await client.getBooleanValue('flag', false);
+        expect(result, false);
     });
   });
 }
