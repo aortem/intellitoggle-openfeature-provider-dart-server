@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:openfeature_dart_server_sdk/openfeature_dart_server_sdk.dart';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
+import 'package:openfeature_dart_server_sdk/hooks.dart';
 
 Future<void> main() async {
   // 1. Configure and register the provider
@@ -9,12 +9,18 @@ Future<void> main() async {
     options: IntelliToggleOptions(
       baseUri: Uri.parse('https://api.intellitoggle.com'),
       timeout: const Duration(seconds: 5),
-    ),
-  );
-  await OpenFeatureAPI().setProvider(provider);
+    ),  );
+  final api = OpenFeatureAPI();
+  api.setProvider(provider);
 
   // 2. Create a client scoped to your service
-  final client = IntelliToggleClient(namespace: 'my-service');
+  final featureClient = FeatureClient(
+    metadata: ClientMetadata(name: 'example-client', version: '1.0.0'),
+    provider: provider,
+    hookManager: HookManager(),
+    defaultContext: EvaluationContext(attributes: {}),
+  );
+  final client = IntelliToggleClient(featureClient);
 
   // 3. Build an evaluation context
   final ctx = {

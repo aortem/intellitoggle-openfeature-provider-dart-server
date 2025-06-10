@@ -260,15 +260,6 @@ Future<void> main() async {
   }
 }
 
-String _inferType(dynamic value) {
-  if (value is bool) return 'boolean';
-  if (value is int) return 'integer';
-  if (value is double) return 'double';
-  if (value is String) return 'string';
-  if (value is Map<String, dynamic>) return 'object';
-  return 'string';
-}
-
 Map<String, dynamic> _orepResponse(dynamic result, String type) {
   return {
     'flagKey': result.flagKey,

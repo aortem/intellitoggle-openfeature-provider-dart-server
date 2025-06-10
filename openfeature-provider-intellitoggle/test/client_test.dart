@@ -1,6 +1,5 @@
 import 'package:test/test.dart';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
-import 'package:openfeature_dart_server_sdk/client.dart';
 import 'package:openfeature_dart_server_sdk/hooks.dart';
 
 void main() {

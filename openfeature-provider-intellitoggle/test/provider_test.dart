@@ -134,25 +134,12 @@ class MockLogger {
 }
 
 class MockHookContext implements HookContext {
-  @override
   final String flagKey;
-
-  @override
   final Object defaultValue;
-
-  @override
   final Map<String, dynamic>? evaluationContext;
-
-  @override
   final Map<String, dynamic>? invocationContext;
-
-  @override
-  final Exception? error; // Changed to Exception?
-
-  @override
+  final Exception? error;
   final Object? result;
-
-  @override
   final Map<String, dynamic> metadata;
 
   MockHookContext({

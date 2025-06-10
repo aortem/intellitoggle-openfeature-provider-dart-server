@@ -1,9 +1,6 @@
 import 'package:test/test.dart';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
-import 'package:openfeature_dart_server_sdk/client.dart';
-import 'package:openfeature_provider_intellitoggle/src/in_memory_provider.dart';
 import 'package:openfeature_dart_server_sdk/hooks.dart';
-import 'package:http/http.dart' as http;
 
 void main() {
   group('IntelliToggleProvider Integration', () {
