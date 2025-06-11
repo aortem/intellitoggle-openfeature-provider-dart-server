@@ -20,7 +20,7 @@
   </a>
 <!-- x-hide-in-docs-start -->
 
-# IntelliToggle OpenFeature Provider for Dart (Server-Side SDK)**
+# IntelliToggle OpenFeature Provider for Dart (Server-Side SDK)
 
 This provider enables using IntelliToggle’s feature management platform with the OpenFeature Dart Server-Side SDK.
 
@@ -48,7 +48,7 @@ Add to your server-side `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  open_feature: ^0.1.0
+  openfeature_dart_server_sdk: ^0.1.0
   openfeature_provider_intellitoggle: ^0.0.1
 ```
 
@@ -61,8 +61,8 @@ dart pub get
 ### Usage
 
 ```dart
-import 'package:open_feature/open_feature.dart';
-import 'package:openfeature_provider_intellitoggle/intellitoggle_provider.dart';
+import 'package:openfeature_dart_server_sdk/openfeature_dart_server_sdk.dart';
+import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 
 void main() async {
   // Create and register the IntelliToggle provider
@@ -75,13 +75,10 @@ void main() async {
   );
 
   // Set as the global OpenFeature provider
-  OpenFeature.instance.setProvider(provider);
-
-  // Optionally wait until ready
-  await OpenFeature.instance.setProviderAndWait(provider);
+  await OpenFeatureAPI().setProvider(provider);
 
   // Create a client and evaluate a flag
-  final client = OpenFeature.instance.getClient('my-service');
+  final client = IntelliToggleClient(namespace: 'my-service');
   final value = await client.getBooleanValue(
     'new-dashboard-enabled',
     false,
@@ -168,12 +165,13 @@ final flag = await client.getObjectValue<Map<String, dynamic>>(
 You can listen to lifecycle events:
 
 ```dart
-OpenFeature.instance.addHandler(ProviderEvents.Ready, (_) {
-  print('IntelliToggle provider is ready!');
-});
-
-OpenFeature.instance.addHandler(ProviderEvents.ConfigurationChanged, (evt) {
-  print('Flags changed: ${evt.flagsChanged}');
+provider.events.listen((event) {
+  if (event.type == IntelliToggleEventType.ready) {
+    print('IntelliToggle provider is ready!');
+  }
+  if (event.type == IntelliToggleEventType.configurationChanged) {
+    print('Flags changed!');
+  }
 });
 ```
 
@@ -184,7 +182,7 @@ OpenFeature.instance.addHandler(ProviderEvents.ConfigurationChanged, (evt) {
 Before your process shuts down, flush any pending events:
 
 ```dart
-await OpenFeature.instance.close();
+await provider.shutdown();
 ```
 
 ---
@@ -206,17 +204,17 @@ void main() async {
   // Create and register the in-memory provider
   final provider = InMemoryProvider();
   provider.setFlag('my-flag', true);
-  OpenFeature.instance.setProvider(provider);
+  await OpenFeatureAPI().setProvider(provider);
 
   // Evaluate a flag
-  final client = OpenFeature.instance.getClient('test');
+  final client = IntelliToggleClient(namespace: 'test');
   final value = await client.getBooleanValue('my-flag', false);
   print('my-flag = $value'); // prints: my-flag = true
 
   // Listen for configuration changes
   provider.events.listen((event) {
     if (event.type == IntelliToggleEventType.configurationChanged) {
-      print('Flags updated: ${event.flags}');
+      print('Flags updated!');
     }
   });
 
@@ -224,6 +222,7 @@ void main() async {
   provider.setFlag('my-flag', false); // Triggers configurationChanged event
 }
 ```
+
 ---
 ## OREP (OpenFeature Remote Evaluation Protocol) API
 
@@ -256,7 +255,7 @@ curl -X POST http://localhost:8080/v1/flags/bool-flag/evaluate \
   "evaluatorId": "InMemoryProvider"
 }
 ```
-> **Security Note:** The OREP/OPTSP server does not implement authentication or rate limiting. Do not expose it to untrusted networks.
+> **Security Note:** The OREP/OPTSP server requires a Bearer token for authentication. Do not expose it to untrusted networks.
 
 ## OREP Error Responses
 
@@ -275,6 +274,8 @@ You can configure the OREP server with environment variables:
 
 - `OREP_HOST` (default: 0.0.0.0)
 - `OREP_PORT` (default: 8080)
+- `OREP_AUTH_TOKEN` (default: changeme-token)
+
 ---
 
 ## OPTSP (OpenFeature Provider Test Suite Protocol) API
@@ -318,13 +319,13 @@ curl -H "Authorization: Bearer changeme-token" ...
 
 ## Contributing
 
-We welcome contributions! See [`CONTRIBUTING.md`](https://github.com/intellitoggle/openfeature-dart) for guidelines.
+We welcome contributions! See [`CONTRIBUTING.md`](https://github.com/intellitoggle/openfeature-dart/blob/main/CONTRIBUTING.md) for guidelines.
 
 ---
 
 ## Learn More
 
 * **Website:** [https://intellitoggle.com](https://intellitoggle.com)
-* **Docs & CLI:** [https://docs.intellitoggle.com/openfeature-dart](https://docs.intellitoggle.com/openfeature-dart)
+* **Docs & CLI:** [https://sdks.aortem.io/intellitoggle](https://sdks.aortem.io/intellitoggle/)
 * **API Reference:** [https://api.intellitoggle.com/docs](https://api.intellitoggle.com/docs)
 * **GitHub:** [https://github.com/intellitoggle/openfeature-dart](https://github.com/intellitoggle/openfeature-dart)

@@ -1,10 +1,7 @@
-/// Context processing and validation for IntelliToggle evaluations
+/// Context processing and validation for IntelliToggle evaluations.
 ///
 /// Handles single-context, multi-context, and custom context kinds with
 /// proper validation and transformation for the IntelliToggle API.
-///
-/// The processor transforms OpenFeature context into IntelliToggle-compatible
-/// format, validating required fields and handling different context types.
 class IntelliToggleContextProcessor {
   /// Process evaluation context for IntelliToggle API
   ///
@@ -18,17 +15,10 @@ class IntelliToggleContextProcessor {
     if (context == null || context.isEmpty) {
       throw ArgumentError('Context cannot be null or empty');
     }
-
     final processedContext = Map<String, dynamic>.from(context);
-
-    // Validate that required targeting key exists
     _validateTargetingKey(processedContext);
-
-    // Determine context kind (defaults to 'user')
     final kind = processedContext['kind'] as String? ?? 'user';
     processedContext['kind'] = kind;
-
-    // Process based on context type
     if (kind == 'multi') {
       return _processMultiContext(processedContext);
     } else {
@@ -48,7 +38,6 @@ class IntelliToggleContextProcessor {
     String kind,
   ) {
     final attributes = _extractContextAttributes(context);
-
     return {
       'kind': 'single',
       'contextKind': kind,
@@ -68,25 +57,18 @@ class IntelliToggleContextProcessor {
   /// Returns processed multi-context
   Map<String, dynamic> _processMultiContext(Map<String, dynamic> context) {
     final contexts = <String, Map<String, dynamic>>{};
-
-    // Extract each context kind from the multi-context
     context.forEach((key, value) {
       if (key != 'kind' && value is Map<String, dynamic>) {
         final contextData = Map<String, dynamic>.from(value);
-
-        // Validate each context has required targetingKey
         if (!contextData.containsKey('targetingKey')) {
           throw ArgumentError('Multi-context "$key" must contain targetingKey');
         }
-
         contexts[key] = _extractContextAttributes(contextData);
       }
     });
-
     if (contexts.isEmpty) {
       throw ArgumentError('Multi-context must contain at least one context');
     }
-
     return {'kind': 'multi', 'contexts': contexts};
   }
 
@@ -99,33 +81,32 @@ class IntelliToggleContextProcessor {
   /// Returns cleaned and validated attributes
   Map<String, dynamic> _extractContextAttributes(Map<String, dynamic> context) {
     final attributes = Map<String, dynamic>.from(context);
-
-    // Prefer 'targetingKey' over legacy 'key' field
-    if (attributes.containsKey('key') &&
-        !attributes.containsKey('targetingKey')) {
+    if (attributes.containsKey('key') && !attributes.containsKey('targetingKey')) {
       attributes['targetingKey'] = attributes['key'];
     }
-    attributes.remove('key'); // Remove legacy field
-
-    // Validate private attributes format
+    attributes.remove('key');
     final privateAttrs = attributes['privateAttributes'];
     if (privateAttrs != null && privateAttrs is! List<String>) {
       throw ArgumentError('privateAttributes must be a List<String>');
     }
-
-    // Validate anonymous flag format
     final anonymous = attributes['anonymous'];
     if (anonymous != null && anonymous is! bool) {
       throw ArgumentError('anonymous must be a boolean');
     }
-
-    // Validate name field format
     final name = attributes['name'];
     if (name != null && name is! String) {
       throw ArgumentError('name must be a string');
     }
-
-    return attributes;
+    final sanitized = <String, dynamic>{};
+    attributes.forEach((key, value) {
+      final safeKey = key.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '');
+      if (value is String) {
+        sanitized[safeKey] = value.trim().replaceAll(RegExp(r'[\x00-\x1F\x7F]'), '');
+      } else if (value is num || value is bool || value == null) {
+        sanitized[safeKey] = value;
+      }
+    });
+    return sanitized;
   }
 
   /// Validate that context contains required targeting key
@@ -138,14 +119,17 @@ class IntelliToggleContextProcessor {
   void _validateTargetingKey(Map<String, dynamic> context) {
     final hasTargetingKey = context.containsKey('targetingKey');
     final hasKey = context.containsKey('key');
-
     if (!hasTargetingKey && !hasKey) {
       throw ArgumentError('Context must contain a targetingKey or key');
     }
-
     final targetingKey = context['targetingKey'] ?? context['key'];
     if (targetingKey is! String || targetingKey.isEmpty) {
       throw ArgumentError('targetingKey must be a non-empty string');
     }
+  }
+
+  /// Called when the evaluation context changes (per spec)
+  void onContextChanged(Map<String, dynamic> newContext) {
+    processContext(newContext);
   }
 }

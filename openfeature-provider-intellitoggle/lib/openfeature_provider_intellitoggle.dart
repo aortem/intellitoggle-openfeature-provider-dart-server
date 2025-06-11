@@ -1,5 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
+/// Main entry point for the IntelliToggle OpenFeature provider package.
+///
+/// Exports all public provider, client, context, event, and utility classes.
+///
+/// See https://intellitoggle.com and https://openfeature.dev for documentation.
+
 /// IntelliToggle provider for OpenFeature Dart Server SDK
 library openfeature_provider_intellitoggle;
 

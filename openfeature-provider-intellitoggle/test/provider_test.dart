@@ -24,7 +24,7 @@ void main() {
 
     test('emits configuration changed event on set and remove', () async {
       final events = <IntelliToggleEvent>[];
-      provider.events.listen(events.add);
+      final sub = provider.events.listen(events.add);
 
       provider.setFlag('foo', 1);
       await Future.delayed(Duration(milliseconds: 10));
@@ -43,6 +43,7 @@ void main() {
             .length,
         greaterThan(1),
       );
+      await sub.cancel();
     });
   });
 
@@ -133,25 +134,12 @@ class MockLogger {
 }
 
 class MockHookContext implements HookContext {
-  @override
   final String flagKey;
-
-  @override
   final Object defaultValue;
-
-  @override
   final Map<String, dynamic>? evaluationContext;
-
-  @override
   final Map<String, dynamic>? invocationContext;
-
-  @override
-  final Exception? error; // Changed to Exception?
-
-  @override
+  final Exception? error;
   final Object? result;
-
-  @override
   final Map<String, dynamic> metadata;
 
   MockHookContext({

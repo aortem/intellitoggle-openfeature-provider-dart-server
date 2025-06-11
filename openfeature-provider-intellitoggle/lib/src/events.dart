@@ -137,34 +137,25 @@ class IntelliToggleEvent {
 /// Manages event broadcasting to subscribers using Dart streams.
 /// Provides a broadcast stream that multiple listeners can subscribe to.
 class IntelliToggleEventEmitter {
-  /// Broadcast stream controller for events
-  final StreamController<IntelliToggleEvent> _controller =
-      StreamController<IntelliToggleEvent>.broadcast();
-
-  /// Stream of all events
-  ///
-  /// Subscribe to this stream to receive all provider events.
-  /// Multiple subscribers are supported via broadcast stream.
+  final StreamController<IntelliToggleEvent> _controller = StreamController<IntelliToggleEvent>.broadcast();
+  final List<StreamSubscription> _subscriptions = [];
   Stream<IntelliToggleEvent> get stream => _controller.stream;
-
-  /// Emit an event to all subscribers
-  ///
-  /// [event] - The event to emit
-  /// Does nothing if the controller is already closed.
+  StreamSubscription<IntelliToggleEvent> listen(void Function(IntelliToggleEvent) onData) {
+    final sub = _controller.stream.listen(onData);
+    _subscriptions.add(sub);
+    return sub;
+  }
   void emit(IntelliToggleEvent event) {
     if (!_controller.isClosed) {
       _controller.add(event);
     }
   }
-
-  /// Dispose of the event emitter
-  ///
-  /// Closes the stream controller and stops accepting new events.
-  /// Call this during provider shutdown to prevent memory leaks.
   void dispose() {
+    for (final sub in _subscriptions) {
+      sub.cancel();
+    }
+    _subscriptions.clear();
     _controller.close();
   }
-
-  /// Check if the event emitter is closed
   bool get isClosed => _controller.isClosed;
 }

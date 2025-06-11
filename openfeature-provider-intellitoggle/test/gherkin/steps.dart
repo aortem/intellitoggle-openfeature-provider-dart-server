@@ -124,7 +124,7 @@ dynamic _parseGherkinValue(String gherkinValue, String? targetTypeHint) {
         !valueToParse.contains('.') &&
         !valueToParse.toLowerCase().contains('e');
     print(
-      '[_parseGherkinValue DEBUG] For int check: intValueNotNull=${intValue != null}, isIntCandidateByStringFormat=$conditionIsInt',
+      '[_parseGherkinValue DEBUG] For int check: intValueNotNull=true, isIntCandidateByStringFormat=$conditionIsInt',
     );
     if (conditionIsInt) {
       print('[_parseGherkinValue DEBUG] Returning int: $intValue');
@@ -883,8 +883,7 @@ StepDefinitionGeneric thenDetailsShouldMatch() {
       expect(details.value, equals(expectedValue));
 
       final String expectedVariantInGherkin = expectedVariant;
-      if (expectedVariantInGherkin != null &&
-          expectedVariantInGherkin.isNotEmpty) {
+      if (expectedVariantInGherkin.isNotEmpty) {
         print(
           '[INFO] Gherkin step expects variant "$expectedVariantInGherkin", but the current SDK version (0.0.9) for FlagEvaluationResult does not provide a variant. This part of the assertion is skipped.',
         );
@@ -1100,7 +1099,7 @@ StepDefinitionGeneric andReasonAndErrorCodeShouldBe() {
       if (errorType == "type mismatch")
         possibleErrorReasons.add("TYPE_MISMATCH");
       expect(
-        possibleErrorReasons.contains(details.reason?.toUpperCase().trim()),
+        possibleErrorReasons.contains(details.reason.toUpperCase().trim()),
         isTrue,
         reason:
             "Reason '${details.reason}' did not match any of: $possibleErrorReasons (Gherkin error '$errorCodeStrFromGherkin').",

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 //import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 
 Future<void> main() async {
@@ -257,15 +258,6 @@ Future<void> main() async {
       await req.response.close();
     }
   }
-}
-
-String _inferType(dynamic value) {
-  if (value is bool) return 'boolean';
-  if (value is int) return 'integer';
-  if (value is double) return 'double';
-  if (value is String) return 'string';
-  if (value is Map<String, dynamic>) return 'object';
-  return 'string';
 }
 
 Map<String, dynamic> _orepResponse(dynamic result, String type) {

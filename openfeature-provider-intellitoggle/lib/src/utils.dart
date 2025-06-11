@@ -10,28 +10,12 @@ import 'options.dart';
 /// Handles HTTP requests, retry logic, error handling, and API-specific formatting
 /// for communication with the IntelliToggle service.
 class IntelliToggleUtils {
-  /// HTTP client for making requests
   final http.Client _httpClient;
-
-  /// Configuration options for the provider
   final IntelliToggleOptions _options;
-
-  /// Last ETag received from server for change detection
   String? _lastEtag;
-
-  /// Creates a new utils instance
-  ///
-  /// [_httpClient] - HTTP client to use for requests
-  /// [_options] - Configuration options
   IntelliToggleUtils(this._httpClient, this._options);
-
-  /// Build HTTP headers for API requests
-  ///
-  /// Includes authentication, content type, user agent, and custom headers.
-  ///
-  /// [sdkKey] - SDK key for authentication
-  /// Returns map of HTTP headers
   Map<String, String> buildHeaders(String sdkKey) {
+    // Never log or expose the SDK key
     return {
       'Authorization': 'Bearer $sdkKey',
       'Content-Type': 'application/json',
@@ -39,7 +23,6 @@ class IntelliToggleUtils {
       'Accept': 'application/json',
       'X-SDK-Version': '1.0.0',
       'X-SDK-Language': 'dart',
-      // Add any custom headers from options
       ..._options.headers,
     };
   }
@@ -73,6 +56,7 @@ class IntelliToggleUtils {
     };
 
     if (_options.enableLogging) {
+      // Never log the SDK key
       print('[IntelliToggle] Evaluating flag: $flagKey with context: $context');
     }
 
@@ -87,17 +71,16 @@ class IntelliToggleUtils {
     // Handle different response codes
     if (response.statusCode == 200) {
       final result = jsonDecode(response.body) as Map<String, dynamic>;
-
       if (_options.enableLogging) {
         print('[IntelliToggle] Flag evaluation result: $result');
       }
-
       return result;
     } else if (response.statusCode == 404) {
       throw FlagNotFoundException('Flag "$flagKey" not found');
     } else if (response.statusCode == 401) {
       throw AuthenticationException('Invalid SDK key');
     } else {
+      // Sanitize error message
       throw ApiException('API request failed: ${response.statusCode}');
     }
   }
@@ -141,7 +124,7 @@ class IntelliToggleUtils {
     }
   }
 
-  /// Make HTTP request with retry logic and exponential backoff
+  /// Make HTTP request with retry logic and exponential backoff (max 30s)
   ///
   /// Implements automatic retry with exponential backoff for resilient
   /// communication with the IntelliToggle API.
@@ -161,16 +144,13 @@ class IntelliToggleUtils {
   }) async {
     final uri = _options.baseUri.resolve(path);
     int attempts = 0;
-
+    final int maxBackoffMs = 30000;
     while (attempts < _options.maxRetries) {
       try {
         if (_options.enableLogging) {
           print('[IntelliToggle] $method $uri (attempt ${attempts + 1})');
         }
-
-        // Create the appropriate HTTP request
         late Future<http.Response> responseFuture;
-
         switch (method.toUpperCase()) {
           case 'GET':
             responseFuture = _httpClient.get(uri, headers: headers);
@@ -188,45 +168,34 @@ class IntelliToggleUtils {
           default:
             throw ArgumentError('Unsupported HTTP method: $method');
         }
-
-        // Execute request with timeout
+        // Enforce TLS validation for production URLs (Dart http.Client does this by default)
+        if (uri.scheme == 'https' && !_options.baseUri.host.contains('localhost')) {
+          // No-op: Dart's http.Client validates certs by default
+        }
         final response = await responseFuture.timeout(_options.timeout);
-
         if (_options.enableLogging) {
           print('[IntelliToggle] Response: ${response.statusCode}');
         }
-
         return response;
       } catch (error) {
         attempts++;
-
         if (_options.enableLogging) {
           print('[IntelliToggle] Request failed (attempt $attempts): $error');
         }
-
-        // If max retries reached, rethrow the error
         if (attempts >= _options.maxRetries) {
           if (error is TimeoutException) {
             throw TimeoutException('Request timeout after ${_options.timeout}');
           }
           rethrow;
         }
-
-        // Calculate exponential backoff delay with jitter
-        final backoffDelay = Duration(
-          milliseconds:
-              _options.retryDelay.inMilliseconds *
-              math.pow(2, attempts - 1).toInt(),
-        );
-
+        final base = _options.retryDelay.inMilliseconds * math.pow(2, attempts - 1).toInt();
+        final backoffDelay = Duration(milliseconds: math.min(base, maxBackoffMs));
         if (_options.enableLogging) {
           print('[IntelliToggle] Retrying in ${backoffDelay.inMilliseconds}ms');
         }
-
         await Future.delayed(backoffDelay);
       }
     }
-
     throw Exception('Max retries exceeded');
   }
 }
@@ -240,16 +209,22 @@ class IntelliToggleUtils {
 class FlagNotFoundException implements Exception {
   final String message;
   FlagNotFoundException(this.message);
-
   @override
   String toString() => 'FlagNotFoundException: $message';
+}
+
+/// Exception thrown when a type mismatch occurs during flag evaluation
+class TypeMismatchException implements Exception {
+  final String message;
+  TypeMismatchException(this.message);
+  @override
+  String toString() => 'TypeMismatchException: $message';
 }
 
 /// Exception thrown when authentication fails (invalid SDK key)
 class AuthenticationException implements Exception {
   final String message;
   AuthenticationException(this.message);
-
   @override
   String toString() => 'AuthenticationException: $message';
 }
@@ -258,7 +233,6 @@ class AuthenticationException implements Exception {
 class ApiException implements Exception {
   final String message;
   ApiException(this.message);
-
   @override
   String toString() => 'ApiException: $message';
 }
