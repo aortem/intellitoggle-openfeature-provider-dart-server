@@ -83,7 +83,7 @@ openfeature_gherkin_conformance:
   stage: gherkin-test
   image: dart:stable
   script:
-    - cd intellitoggle-openfeature-provider-dart
+    - cd openfeature-provider-intellitoggle
     - dart pub get
     - dart test test/gherkin/gherkin_suite_test.dart --concurrency=1
   artifacts:
