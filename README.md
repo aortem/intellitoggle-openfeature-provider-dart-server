@@ -1,4 +1,26 @@
-**IntelliToggle OpenFeature Provider for Dart (Server-Side SDK)**
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/aortem/logos/main/Aortem-logo-small.png" />
+    <img align="center" alt="Aortem Logo" src="https://raw.githubusercontent.com/aortem/logos/main/Aortem-logo-small.png" />
+  </picture>
+</p>
+
+<!-- x-hide-in-docs-end -->
+<p align="center" class="github-badges">
+  <!-- Release Badge -->
+  <a href="https://github.com/aortem/intellitoggle/tags">
+    <img alt="GitHub Tag" src="https://img.shields.io/github/v/tag/aortem/intellitoggle?style=for-the-badge" />
+  </a>
+  <!-- Dart-Specific Badges -->
+  <a href="https://pub.dev/packages/firebase_dart_admin_auth_sdk">
+    <img alt="Pub Version" src="https://img.shields.io/pub/v/firebase_dart_admin_auth_sdk.svg?style=for-the-badge" />
+  </a>
+  <a href="https://dart.dev/">
+    <img alt="Built with Dart" src="https://img.shields.io/badge/Built%20with-Dart-blue.svg?style=for-the-badge" />
+  </a>
+<!-- x-hide-in-docs-start -->
+
+# IntelliToggle OpenFeature Provider for Dart (Server-Side SDK)
 
 This provider enables using IntelliToggle’s feature management platform with the OpenFeature Dart Server-Side SDK.
 
@@ -14,7 +36,7 @@ This provider enables using IntelliToggle’s feature management platform with t
 
 ## Supported Dart Versions
 
-Compatible with Dart **2.17** and above.
+Compatible with Dart **3.8.1** and above.
 
 ---
 
@@ -26,8 +48,8 @@ Add to your server-side `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  open_feature: ^0.1.0
-  intellitoggle_openfeature: ^0.0.1
+  openfeature_dart_server_sdk: ^0.1.0
+  openfeature_provider_intellitoggle: ^0.0.1
 ```
 
 Then run:
@@ -39,8 +61,8 @@ dart pub get
 ### Usage
 
 ```dart
-import 'package:open_feature/open_feature.dart';
-import 'package:intellitoggle_openfeature/intellitoggle_provider.dart';
+import 'package:openfeature_dart_server_sdk/openfeature_dart_server_sdk.dart';
+import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 
 void main() async {
   // Create and register the IntelliToggle provider
@@ -53,13 +75,10 @@ void main() async {
   );
 
   // Set as the global OpenFeature provider
-  OpenFeature.instance.setProvider(provider);
-
-  // Optionally wait until ready
-  await OpenFeature.instance.setProviderAndWait(provider);
+  await OpenFeatureAPI().setProvider(provider);
 
   // Create a client and evaluate a flag
-  final client = OpenFeature.instance.getClient('my-service');
+  final client = IntelliToggleClient(namespace: 'my-service');
   final value = await client.getBooleanValue(
     'new-dashboard-enabled',
     false,
@@ -146,12 +165,13 @@ final flag = await client.getObjectValue<Map<String, dynamic>>(
 You can listen to lifecycle events:
 
 ```dart
-OpenFeature.instance.addHandler(ProviderEvents.Ready, (_) {
-  print('IntelliToggle provider is ready!');
-});
-
-OpenFeature.instance.addHandler(ProviderEvents.ConfigurationChanged, (evt) {
-  print('Flags changed: ${evt.flagsChanged}');
+provider.events.listen((event) {
+  if (event.type == IntelliToggleEventType.ready) {
+    print('IntelliToggle provider is ready!');
+  }
+  if (event.type == IntelliToggleEventType.configurationChanged) {
+    print('Flags changed!');
+  }
 });
 ```
 
@@ -162,20 +182,150 @@ OpenFeature.instance.addHandler(ProviderEvents.ConfigurationChanged, (evt) {
 Before your process shuts down, flush any pending events:
 
 ```dart
-await OpenFeature.instance.close();
+await provider.shutdown();
+```
+
+---
+
+## In-Memory Provider & Console Logging Hook (Local Development & Testing)
+
+This SDK includes utilities for rapid local development and test suites:
+
+### InMemoryProvider
+
+The `InMemoryProvider` lets you define and update feature flags in-memory at runtime. This is ideal for unit tests or local development, where you want to avoid network calls or external dependencies.
+
+**Usage Example:**
+
+```dart
+import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
+
+void main() async {
+  // Create and register the in-memory provider
+  final provider = InMemoryProvider();
+  provider.setFlag('my-flag', true);
+  await OpenFeatureAPI().setProvider(provider);
+
+  // Evaluate a flag
+  final client = IntelliToggleClient(namespace: 'test');
+  final value = await client.getBooleanValue('my-flag', false);
+  print('my-flag = $value'); // prints: my-flag = true
+
+  // Listen for configuration changes
+  provider.events.listen((event) {
+    if (event.type == IntelliToggleEventType.configurationChanged) {
+      print('Flags updated!');
+    }
+  });
+
+  // Update a flag at runtime
+  provider.setFlag('my-flag', false); // Triggers configurationChanged event
+}
+```
+
+---
+## OREP (OpenFeature Remote Evaluation Protocol) API
+
+This provider exposes an [OREP](https://openfeature.dev/specification/appendix-c) HTTP API for remote flag evaluation.
+
+### Starting the OREP Server
+
+```bash
+dart run bin/orep_server.dart
+```
+
+The server will listen on `http://localhost:8080`.
+
+### Example: Evaluate a Boolean Flag via OREP
+
+```bash
+curl -X POST http://localhost:8080/v1/flags/bool-flag/evaluate \
+  -H "Content-Type: application/json" \
+  -d '{"defaultValue": false, "type": "boolean", "context": {}}'
+```
+
+**Response:**
+```json
+{
+  "flagKey": "bool-flag",
+  "type": "boolean",
+  "value": true,
+  "reason": "STATIC",
+  "evaluatedAt": "2025-06-02T12:34:56.789Z",
+  "evaluatorId": "InMemoryProvider"
+}
+```
+> **Security Note:** The OREP/OPTSP server requires a Bearer token for authentication. Do not expose it to untrusted networks.
+
+## OREP Error Responses
+
+If a request is invalid, the server returns:
+
+```json
+{
+  "error": "Invalid JSON",
+  "details": "FormatException: Unexpected character..."
+}
+```
+
+## Configuration
+
+You can configure the OREP server with environment variables:
+
+- `OREP_HOST` (default: 0.0.0.0)
+- `OREP_PORT` (default: 8080)
+- `OREP_AUTH_TOKEN` (default: changeme-token)
+
+---
+
+## OPTSP (OpenFeature Provider Test Suite Protocol) API
+
+This provider supports the [OPTSP](https://openfeature.dev/specification/appendix-d) endpoints for automated conformance testing.
+
+### Example: Seed Flags
+
+```bash
+curl -X POST http://localhost:8080/v1/provider/seed \
+  -H "Content-Type: application/json" \
+  -d '{"flags": {"my-flag": true, "other-flag": "hello"}}'
+```
+
+### Example: Reset Provider
+
+```bash
+curl -X POST http://localhost:8080/v1/provider/reset
+```
+
+### Example: Get Provider Metadata
+
+```bash
+curl http://localhost:8080/v1/provider/metadata
+```
+
+---
+
+## Security
+
+All OREP/OPTSP endpoints require a Bearer token for authentication.
+
+Set the token via the `OREP_AUTH_TOKEN` environment variable (default: `changeme-token`).
+
+Example request:
+```bash
+curl -H "Authorization: Bearer changeme-token" ...
 ```
 
 ---
 
 ## Contributing
 
-We welcome contributions! See [`CONTRIBUTING.md`](https://github.com/intellitoggle/openfeature-dart) for guidelines.
+We welcome contributions! See [`CONTRIBUTING.md`](https://github.com/intellitoggle/openfeature-dart/blob/main/CONTRIBUTING.md) for guidelines.
 
 ---
 
 ## Learn More
 
 * **Website:** [https://intellitoggle.com](https://intellitoggle.com)
-* **Docs & CLI:** [https://docs.intellitoggle.com/openfeature-dart](https://docs.intellitoggle.com/openfeature-dart)
+* **Docs & CLI:** [https://sdks.aortem.io/intellitoggle](https://sdks.aortem.io/intellitoggle/)
 * **API Reference:** [https://api.intellitoggle.com/docs](https://api.intellitoggle.com/docs)
 * **GitHub:** [https://github.com/intellitoggle/openfeature-dart](https://github.com/intellitoggle/openfeature-dart)
