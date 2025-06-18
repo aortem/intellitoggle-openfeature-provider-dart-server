@@ -130,6 +130,7 @@ class IntelliToggleContextProcessor {
 
   /// Called when the evaluation context changes (per spec)
   void onContextChanged(Map<String, dynamic> newContext) {
+    // Per spec, process and validate new context
     processContext(newContext);
   }
 }

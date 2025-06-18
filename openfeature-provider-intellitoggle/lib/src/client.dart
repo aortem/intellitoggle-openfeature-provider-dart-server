@@ -54,11 +54,12 @@ class IntelliToggleClient {
       name: name,
       privateAttributes: privateAttributes,
     );
+    // Add timeout to all async calls
     return await _client.getBooleanFlag(
       flagKey,
       context: context,
       defaultValue: defaultValue,
-    );
+    ).timeout(const Duration(seconds: 10));
   }
 
   /// Evaluate a string flag with enhanced context processing
@@ -80,11 +81,12 @@ class IntelliToggleClient {
       name: name,
       privateAttributes: privateAttributes,
     );
+    // Add timeout to all async calls
     return await _client.getStringFlag(
       flagKey,
       context: context,
       defaultValue: defaultValue,
-    );
+    ).timeout(const Duration(seconds: 10));
   }
 
   /// Evaluate an integer flag with enhanced context processing
@@ -106,11 +108,12 @@ class IntelliToggleClient {
       name: name,
       privateAttributes: privateAttributes,
     );
+    // Add timeout to all async calls
     return await _client.getIntegerFlag(
       flagKey,
       context: context,
       defaultValue: defaultValue,
-    );
+    ).timeout(const Duration(seconds: 10));
   }
 
   /// Evaluate a double flag with enhanced context processing
@@ -132,11 +135,12 @@ class IntelliToggleClient {
       name: name,
       privateAttributes: privateAttributes,
     );
+    // Add timeout to all async calls
     return await _client.getDoubleFlag(
       flagKey,
       context: context,
       defaultValue: defaultValue,
-    );
+    ).timeout(const Duration(seconds: 10));
   }
 
   /// Evaluate an object flag with enhanced context processing
@@ -160,11 +164,12 @@ class IntelliToggleClient {
       name: name,
       privateAttributes: privateAttributes,
     );
+    // Add timeout to all async calls
     return await _client.getObjectFlag(
       flagKey,
       context: context,
       defaultValue: defaultValue,
-    );
+    ).timeout(const Duration(seconds: 10));
   }
 
   /// Build evaluation context from various sources
