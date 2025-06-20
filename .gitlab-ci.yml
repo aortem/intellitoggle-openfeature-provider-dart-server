@@ -98,7 +98,7 @@ openfeature_gherkin_conformance:
 gitlab_github_release:
   stage: release
   trigger:
-    include: tools/pipelines/backend/child-ci-release.yml
+    include: tools/pipelines/service-project-setup/child-ci-release.yml
   rules:
     - if: '$CI_COMMIT_BRANCH == "development"'
       when: always
