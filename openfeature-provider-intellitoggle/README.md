@@ -1,20 +1,119 @@
-# DartStream
+# openfeature_provider_intellitoggle
 
-## DS Standard Packages
+An OpenFeature provider for [IntelliToggle](https://intellitoggle.com), enabling Dart backends to evaluate feature flags using the OpenFeature API standard.
 
-DS Standard packages allow you to utilize core dart features maintained by the Dart team.  The depdendencies remain largely unmodified.  Dartstream extends the built-in classes and methods, therefore allowing developers the greatest composition flexibility when building their applications.
+This package integrates seamlessly with [`openfeature_dart_server_sdk`](https://pub.dev/packages/openfeature_dart_server_sdk) and supports IntelliToggle's advanced targeting, rule-based rollouts, and experimentation platform.
 
-## Package Conflicts and Aliases
+---
 
-In some cases, core dart package have naming conflicts (ie. same method, classname).  For some packages, we build wrappers and use the DS prefix to avoid those conflicts.  
+## 🔧 Features
 
-In other cases, where may avoid using a package altogether.  We will keep the documentation up to date as often as possible.
+- ✅ Supports Boolean, String, Number, and Object flag evaluations
+- 🔁 Real-time updates via IntelliToggle event system
+- 🧪 Includes `InMemoryProvider` for local development and testing
+- 🌐 Optional OREP/OPTSP server support for remote evaluation (e.g. test suites)
 
-## Licensing
+---
 
-All Dartstream packages are licensed under BSD-3, except for the *services packages*, which uses the ELv2 license, and the *Dartstream SDK packages*, which are licensed from third party software Aortem Inc. In short, this means that you can, without limitation, use any of the client packages in your app as long as you do not offer the SDK's or services as a cloud service to 3rd parties (this is typically only relevant for cloud service providers).  See the [LICENSE](LICENSE.md) file for more details.
+## 💻 Installation
 
+Add to your server-side Dart project:
 
-## Enhance with DartStream"
+```yaml
+dependencies:
+  openfeature_dart_server_sdk: ^0.1.0
+  openfeature_provider_intellitoggle: ^0.0.2
+````
 
-We hope DartStream helps you to efficiently build and scale your server-side applications. Join our growing community and start contributing to the ecosystem today!
+Then install:
+
+```bash
+dart pub get
+```
+
+---
+
+## 🚀 Getting Started
+
+```dart
+import 'package:openfeature_dart_server_sdk/openfeature_dart_server_sdk.dart';
+import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
+
+void main() async {
+  final provider = IntelliToggleProvider(
+    sdkKey: 'YOUR_INTELLITOGGLE_SDK_KEY',
+  );
+
+  await OpenFeatureAPI().setProvider(provider);
+
+  final client = IntelliToggleClient(namespace: 'my-service');
+
+  final enabled = await client.getBooleanValue(
+    'new-dashboard-enabled',
+    false,
+    evaluationContext: {
+      'targetingKey': 'user-123',
+      'role': 'beta_tester',
+    },
+  );
+
+  print('Feature enabled: $enabled');
+}
+```
+
+---
+
+## 🧪 Local Development & Testing
+
+Use the included `InMemoryProvider` for fast testing without external dependencies:
+
+```dart
+final provider = InMemoryProvider();
+provider.setFlag('experimental-mode', true);
+
+await OpenFeatureAPI().setProvider(provider);
+
+final client = IntelliToggleClient(namespace: 'test');
+final enabled = await client.getBooleanValue('experimental-mode', false);
+print('Flag = $enabled'); // true
+```
+
+---
+
+## ⚙️ OREP Server (Optional)
+
+Start a remote flag evaluation API:
+
+```bash
+dart run bin/orep_server.dart
+```
+
+Configure using environment variables:
+
+| Variable          | Default          |
+| ----------------- | ---------------- |
+| `OREP_PORT`       | `8080`           |
+| `OREP_HOST`       | `0.0.0.0`        |
+| `OREP_AUTH_TOKEN` | `changeme-token` |
+
+---
+
+## 📚 Resources
+
+* [IntelliToggle Docs](https://intellitoggle.com)
+* [OpenFeature Dart SDK](https://pub.dev/packages/openfeature_dart_server_sdk)
+* [GitHub Repository](https://github.com/aortem/intellitoggle)
+* [OpenFeature Specification](https://openfeature.dev)
+
+---
+
+## 📝 License
+
+MIT
+
+```
+
+---
+
+Let me know if you'd like a `bin/orep_server.dart` usage snippet or an `example/main.dart` to pair with this for pub.dev’s [score metrics](https://dart.dev/tools/pub/score).
+```
