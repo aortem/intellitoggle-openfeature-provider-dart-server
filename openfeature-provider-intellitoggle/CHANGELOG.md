@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.4] - 2025-06-21
+
+### Added
+- Update repository url
+
 ## [0.0.3] - 2025-06-21
 
 ### Added
