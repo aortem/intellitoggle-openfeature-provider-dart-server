@@ -48,8 +48,8 @@ Add to your server-side `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  openfeature_dart_server_sdk: ^0.1.0
-  openfeature_provider_intellitoggle: ^0.0.1
+  openfeature_dart_server_sdk: ^0.0.10
+  openfeature_provider_intellitoggle: ^0.0.3
 ```
 
 Then run:
