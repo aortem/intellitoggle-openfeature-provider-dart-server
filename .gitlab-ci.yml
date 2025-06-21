@@ -5,7 +5,7 @@ stages:
 # - unit_testing
 # - frontend
 # - backend
-#  - release
+  - release
 
 # The pipeline covers a series of triggers to ensure full testing and coverage
 
@@ -90,3 +90,15 @@ openfeature_gherkin_conformance:
     when: always
     reports:
       junit: build/test-results.xml
+    expire_in: 1h
+  rules:
+    - when: always
+
+# Release Triggers
+gitlab_github_release:
+  stage: release
+  trigger:
+    include: tools/pipelines/service-project-setup/child-ci-release.yml
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "development"'
+      when: always

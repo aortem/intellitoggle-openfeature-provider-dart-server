@@ -52,10 +52,13 @@ class IntelliToggleProvider implements FeatureProvider {
     _eventEmitter = IntelliToggleEventEmitter();
   }
 
-  /// Provider name identifier
+  /// Provider metadata (OpenFeature spec)
   @override
-  // ProviderMetadata is not supported in this SDK version; use only name
-  String get name => 'IntelliToggle';
+  ProviderMetadata get metadata => ProviderMetadata(
+    name: 'IntelliToggle',
+    version: '1.0.0',
+    attributes: const {'platform': 'dart'},
+  );
 
   /// Current provider state (READY, ERROR, NOT_READY, etc.)
   @override
@@ -71,33 +74,35 @@ class IntelliToggleProvider implements FeatureProvider {
   /// Returns a Future that completes when initialization is done
   @override
   Future<void> initialize([Map<String, dynamic>? context]) async {
-    // Prevent multiple initializations
+    // Prevent multiple initializations (thread-safe)
     if (_initCompleter.isCompleted) return _initCompleter.future;
-
+    // Synchronize initialization
+    if (_state == ProviderState.READY || _state == ProviderState.ERROR) {
+      return _initCompleter.future;
+    }
+    _state = ProviderState.NOT_READY;
     try {
-      _state = ProviderState.NOT_READY;
-
+      _eventEmitter.emit(IntelliToggleEvent.initializing());
       // Test connection to ensure API is reachable
       await _testConnection();
-
       // Mark as ready and emit event
       _state = ProviderState.READY;
       _eventEmitter.emit(IntelliToggleEvent.ready());
-
       // Start polling for configuration changes if enabled
       if (_options.enablePolling) {
         _startPolling();
       }
-
       _initCompleter.complete();
     } catch (error) {
       // Handle initialization failure
       _state = ProviderState.ERROR;
-      _eventEmitter.emit(IntelliToggleEvent.error('Provider error occurred'));
-      _initCompleter.completeError(error);
+      final sanitized = _sanitizeError(error);
+      _eventEmitter.emit(IntelliToggleEvent.error(sanitized));
+      if (!_initCompleter.isCompleted) {
+        _initCompleter.completeError(sanitized);
+      }
       rethrow;
     }
-
     return _initCompleter.future;
   }
 
@@ -110,9 +115,13 @@ class IntelliToggleProvider implements FeatureProvider {
   Future<void> shutdown() async {
     _pollingTimer?.cancel();
     _pollingTimer = null;
-    _state = ProviderState.NOT_READY;
+    _state = ProviderState.SHUTDOWN;
+    _eventEmitter.emit(IntelliToggleEvent.shutdown());
     _eventEmitter.dispose();
     _httpClient.close();
+    if (!_initCompleter.isCompleted) {
+      _initCompleter.completeError('Shutdown before initialization completed');
+    }
   }
 
   /// Evaluate a boolean feature flag
@@ -197,25 +206,66 @@ class IntelliToggleProvider implements FeatureProvider {
         processedContext,
         valueType,
       );
+      final now = DateTime.now();
+      ErrorCode? errorCode;
+      if (response['errorCode'] != null) {
+        switch (response['errorCode'].toString()) {
+          case 'FLAG_NOT_FOUND':
+            errorCode = ErrorCode.FLAG_NOT_FOUND;
+            break;
+          case 'TYPE_MISMATCH':
+            errorCode = ErrorCode.TYPE_MISMATCH;
+            break;
+          case 'GENERAL':
+            errorCode = ErrorCode.GENERAL;
+            break;
+          default:
+            errorCode = null;
+        }
+      }
       final result = FlagEvaluationResult<T>(
         flagKey: flagKey,
-        value: response['value'] as T,
-        evaluatedAt: DateTime.now(),
-        evaluatorId: name,
-        reason: response['reason'] ?? 'UNKNOWN',
+        value: response['value'] as T? ?? defaultValue,
+        reason: response['reason']?.toString() ?? 'DEFAULT',
+        variant: response['variant']?.toString(),
+        errorCode: errorCode,
+        errorMessage: _sanitizeError(response['errorMessage']),
+        evaluatedAt: now,
+        evaluatorId: 'IntelliToggle',
       );
       _eventEmitter.emit(
-        IntelliToggleEvent.flagEvaluated(flagKey, result.value, result.reason),
+        IntelliToggleEvent.flagEvaluated(flagKey, result.value, result.reason, variant: result.variant, context: processedContext),
       );
       return result;
-    } catch (error) {
-      _eventEmitter.emit(IntelliToggleEvent.error('Provider error occurred'));
+    } on FlagNotFoundException catch (error) {
       return FlagEvaluationResult<T>(
         flagKey: flagKey,
         value: defaultValue,
-        evaluatedAt: DateTime.now(),
-        evaluatorId: name,
         reason: 'ERROR',
+        errorCode: ErrorCode.FLAG_NOT_FOUND,
+        errorMessage: _sanitizeError(error),
+        evaluatedAt: DateTime.now(),
+        evaluatorId: 'IntelliToggle',
+      );
+    } on TypeMismatchException catch (error) {
+      return FlagEvaluationResult<T>(
+        flagKey: flagKey,
+        value: defaultValue,
+        reason: 'ERROR',
+        errorCode: ErrorCode.TYPE_MISMATCH,
+        errorMessage: _sanitizeError(error),
+        evaluatedAt: DateTime.now(),
+        evaluatorId: 'IntelliToggle',
+      );
+    } catch (error) {
+      return FlagEvaluationResult<T>(
+        flagKey: flagKey,
+        value: defaultValue,
+        reason: 'ERROR',
+        errorCode: ErrorCode.GENERAL,
+        errorMessage: _sanitizeError(error),
+        evaluatedAt: DateTime.now(),
+        evaluatorId: 'IntelliToggle',
       );
     }
   }
@@ -255,4 +305,17 @@ class IntelliToggleProvider implements FeatureProvider {
 
   /// Get event stream for listening to provider lifecycle events
   Stream<IntelliToggleEvent> get events => _eventEmitter.stream;
+
+  String _sanitizeError(dynamic error) {
+    // Remove sensitive info and format error message
+    final msg = error?.toString() ?? 'Unknown error';
+    if (msg.contains(_sdkKey)) {
+      return 'An error occurred (details hidden for security)';
+    }
+    // Remove Bearer tokens and other secrets
+    return msg.replaceAll(_sdkKey, '[REDACTED]').replaceAll(RegExp(r'Bearer [^\s]+'), '[REDACTED]');
+  }
+
+  @override
+  String get name => 'IntelliToggle';
 }

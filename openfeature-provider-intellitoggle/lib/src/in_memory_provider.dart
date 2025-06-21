@@ -31,6 +31,13 @@ class InMemoryProvider implements FeatureProvider {
   @override
   ProviderConfig get config => ProviderConfig();
 
+  @override
+  ProviderMetadata get metadata => ProviderMetadata(
+    name: 'InMemoryProvider',
+    version: '1.0.0',
+    attributes: const {'platform': 'dart'},
+  );
+
   /// Set or update a flag value.
   ///
   /// [key] is the flag key, [value] is the flag value (any type).

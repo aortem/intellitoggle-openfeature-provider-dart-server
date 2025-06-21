@@ -48,8 +48,8 @@ Add to your server-side `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  openfeature_dart_server_sdk: ^0.1.0
-  openfeature_provider_intellitoggle: ^0.0.1
+  openfeature_dart_server_sdk: ^0.0.10
+  openfeature_provider_intellitoggle: ^0.0.3
 ```
 
 Then run:
@@ -328,4 +328,4 @@ We welcome contributions! See [`CONTRIBUTING.md`](https://github.com/intellitogg
 * **Website:** [https://intellitoggle.com](https://intellitoggle.com)
 * **Docs & CLI:** [https://sdks.aortem.io/intellitoggle](https://sdks.aortem.io/intellitoggle/)
 * **API Reference:** [https://api.intellitoggle.com/docs](https://api.intellitoggle.com/docs)
-* **GitHub:** [https://github.com/intellitoggle/openfeature-dart](https://github.com/intellitoggle/openfeature-dart)
+* **GitHub:** [https://github.com/aortem/intellitoggle-openfeature-provider-dart-server](https://github.com/aortem/intellitoggle-openfeature-provider-dart-server)
