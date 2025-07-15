@@ -12,8 +12,8 @@
     <img alt="GitHub Tag" src="https://img.shields.io/github/v/tag/aortem/intellitoggle?style=for-the-badge" />
   </a>
   <!-- Dart-Specific Badges -->
-  <a href="https://pub.dev/packages/firebase_dart_admin_auth_sdk">
-    <img alt="Pub Version" src="https://img.shields.io/pub/v/firebase_dart_admin_auth_sdk.svg?style=for-the-badge" />
+  <a href="https://pub.dev/packages/openfeature_provider_intellitoggle">
+    <img alt="Pub Version" src="https://img.shields.io/pub/v/openfeature_provider_intellitoggle.svg?style=for-the-badge" />
   </a>
   <a href="https://dart.dev/">
     <img alt="Built with Dart" src="https://img.shields.io/badge/Built%20with-Dart-blue.svg?style=for-the-badge" />
