@@ -22,297 +22,545 @@
 
 # IntelliToggle OpenFeature Provider for Dart (Server-Side SDK)
 
-This provider enables using IntelliToggle’s feature management platform with the OpenFeature Dart Server-Side SDK.
+Official IntelliToggle provider for the OpenFeature Dart Server SDK. Enables secure feature flag evaluation with OAuth2 authentication, multi-tenant isolation, and real-time updates.
 
-> **Note:** This provider targets multi-user server environments (e.g. web servers, back-end services). It is **not** intended for use in Flutter desktop or embedded contexts.
+> **Note:** This provider targets server-side Dart applications. Flutter support is available but secondary to server-side functionality.
 
----
+## Features
 
-## IntelliToggle Overview
-
-[IntelliToggle](https://intellitoggle.com) is a SaaS feature-flag and experimentation platform that powers dynamic rollouts, canary deployments, and real-time flag evaluations. By integrating with OpenFeature, you can swap providers transparently, leverage IntelliToggle’s advanced rules engine, and maintain consistent flag behavior across services.
-
----
+- **OpenFeature compliance** - Boolean, String, Integer, Double, and Object flag evaluation
+- **OAuth2 authentication** - Client credentials flow with tenant isolation
+- **Advanced targeting** - Multi-context evaluation with rules engine
+- **Real-time updates** - Streaming configuration changes and webhooks
+- **Local development** - InMemoryProvider for testing without external dependencies
+- **OREP server** - Remote evaluation protocol for distributed systems
 
 ## Supported Dart Versions
 
-Compatible with Dart **3.8.1** and above.
+Dart **3.8.1** and above.
 
 ---
 
-## Getting Started
-
-### Installation
-
-Add to your server-side `pubspec.yaml`:
+## Installation
 
 ```yaml
 dependencies:
   openfeature_dart_server_sdk: ^0.0.10
-  openfeature_provider_intellitoggle: ^0.0.3
+  openfeature_provider_intellitoggle: ^0.0.4
 ```
-
-Then run:
 
 ```bash
 dart pub get
 ```
 
-### Usage
+---
+
+## Authentication
+
+IntelliToggle uses OAuth2 Client Credentials for secure API access.
+
+### Get OAuth2 Credentials
+
+```bash
+curl -X POST https://api.intellitoggle.com/api/oauth2/clients \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TENANT_TOKEN" \
+  -H "X-Tenant-ID: YOUR_TENANT_ID" \
+  -d '{
+    "name": "My Server App",
+    "scopes": ["flags:read", "flags:evaluate"]
+  }'
+```
+
+Response:
+```json
+{
+  "clientId": "client_1234567890",
+  "clientSecret": "cs_1234567890_secret"
+}
+```
+
+### Environment Setup
+
+```env
+INTELLITOGGLE_CLIENT_ID=client_1234567890
+INTELLITOGGLE_CLIENT_SECRET=cs_1234567890_secret
+INTELLITOGGLE_TENANT_ID=your_tenant_id
+INTELLITOGGLE_API_URL=https://api.intellitoggle.com
+```
+
+---
+
+## Basic Usage
 
 ```dart
 import 'package:openfeature_dart_server_sdk/openfeature_dart_server_sdk.dart';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 
 void main() async {
-  // Create and register the IntelliToggle provider
+  // Initialize provider with OAuth2 client secret
   final provider = IntelliToggleProvider(
-    sdkKey: 'YOUR_INTELLITOGGLE_SDK_KEY',
-    options: IntelliToggleOptions(
-      timeout: Duration(seconds: 5),
-      baseUri: Uri.parse('https://api.intellitoggle.com'),
+    sdkKey: 'YOUR_CLIENT_SECRET',
+    options: IntelliToggleOptions.production(),
+  );
+
+  // Set as global provider
+  await OpenFeatureAPI().setProvider(provider);
+
+  // Create client
+  final client = IntelliToggleClient(
+    FeatureClient(
+      metadata: ClientMetadata(name: 'my-service'),
+      hookManager: HookManager(),
     ),
   );
 
-  // Set as the global OpenFeature provider
-  await OpenFeatureAPI().setProvider(provider);
-
-  // Create a client and evaluate a flag
-  final client = IntelliToggleClient(namespace: 'my-service');
-  final value = await client.getBooleanValue(
-    'new-dashboard-enabled',
+  // Evaluate flags
+  final enabled = await client.getBooleanValue(
+    'new-api-endpoint',
     false,
+    targetingKey: 'user-123',
     evaluationContext: {
-      'kind': 'user',
-      'targetingKey': 'user-123',
-      'role': 'beta_tester',
+      'role': 'admin',
+      'plan': 'enterprise',
+      'region': 'us-east',
     },
   );
 
-  print('Feature “new-dashboard-enabled” = $value');
+  print('Feature enabled: $enabled');
 }
 ```
 
 ---
 
-## OpenFeature Context & IntelliToggle Specifics
+## Advanced Usage
 
-IntelliToggle supports both single-context and multi-context flag evaluations. The provider inspects your `evaluationContext` for a `kind` attribute:
-
-1. **No `kind`** → treated as a single “user” context.
-2. **`kind: 'multi'`** → multi-context; additional keys denote each context.
-3. **`kind: '<anything-else>'`** → single context of that custom kind.
-
-> The `targetingKey` (or `key`) attribute is **required** and takes precedence over `key` if both are present.
-
-### Reserved Context Attributes
-
-* `privateAttributes` (List<String>) → hides sensitive fields
-* `anonymous` (bool) → flags the context as anonymous
-* `name` (String) → human-readable name
-
----
-
-## Examples
-
-### Single-User Context
+### Multi-Context Evaluation
 
 ```dart
-final ctx = {
-  'targetingKey': 'user-123',
-  'name': 'Jane Doe',
-  'anonymous': false,
-};
-final flag = await client.getBooleanValue('beta-feature', false, evaluationContext: ctx);
-```
-
-### Custom Context Kind
-
-```dart
-final ctx = {
-  'kind': 'organization',
-  'targetingKey': 'org-456',
-  'plan': 'enterprise',
-};
-final flag = await client.getStringValue('org-level-flag', 'none', evaluationContext: ctx);
-```
-
-### Multi-Context
-
-```dart
-final ctx = {
-  'kind': 'multi',
+final multiContext = client.createMultiContext({
   'user': {
     'targetingKey': 'user-123',
-    'email': 'jane@example.com',
+    'role': 'admin',
+    'plan': 'enterprise',
   },
-  'project': {
-    'targetingKey': 'proj-789',
-    'tier': 'beta',
+  'organization': {
+    'targetingKey': 'org-456',
+    'tier': 'premium',
+    'industry': 'fintech',
   },
-};
-final flag = await client.getObjectValue<Map<String, dynamic>>(
-  'project-experiment',
+});
+
+final config = await client.getObjectValue(
+  'feature-config',
   {},
-  evaluationContext: ctx,
+  evaluationContext: multiContext.attributes,
+);
+```
+
+### Custom Context Types
+
+```dart
+final deviceContext = client.createContext(
+  targetingKey: 'device-789',
+  kind: 'device',
+  customAttributes: {
+    'os': 'linux',
+    'version': '5.4.0',
+    'datacenter': 'us-west-2',
+  },
+);
+
+final threshold = await client.getIntegerValue(
+  'rate-limit',
+  1000,
+  evaluationContext: deviceContext.attributes,
+);
+```
+
+### Event Handling
+
+```dart
+provider.events.listen((event) {
+  switch (event.type) {
+    case IntelliToggleEventType.ready:
+      print('Provider ready');
+      break;
+    case IntelliToggleEventType.configurationChanged:
+      print('Flags updated: ${event.data?['flagsChanged']}');
+      break;
+    case IntelliToggleEventType.error:
+      print('Error: ${event.message}');
+      break;
+  }
+});
+```
+
+### Global Context
+
+```dart
+// Set context for all evaluations
+OpenFeatureAPI().setGlobalContext(
+  OpenFeatureEvaluationContext({
+    'environment': 'production',
+    'service': 'api-gateway',
+    'version': '2.1.0',
+  })
 );
 ```
 
 ---
 
-## Provider Events
+## Configuration Options
 
-You can listen to lifecycle events:
+### Production Configuration
 
 ```dart
-provider.events.listen((event) {
-  if (event.type == IntelliToggleEventType.ready) {
-    print('IntelliToggle provider is ready!');
-  }
-  if (event.type == IntelliToggleEventType.configurationChanged) {
-    print('Flags changed!');
-  }
-});
+final options = IntelliToggleOptions.production(
+  baseUri: Uri.parse('https://api.intellitoggle.com'),
+  timeout: Duration(seconds: 10),
+  pollingInterval: Duration(minutes: 5),
+);
+```
+
+### Development Configuration  
+
+```dart
+final options = IntelliToggleOptions.development(
+  baseUri: Uri.parse('http://localhost:8080'),
+  timeout: Duration(seconds: 5),
+);
+```
+
+### Custom Configuration
+
+```dart
+final options = IntelliToggleOptions(
+  timeout: Duration(seconds: 15),
+  enablePolling: true,
+  pollingInterval: Duration(minutes: 2),
+  enableStreaming: true,
+  maxRetries: 5,
+  enableLogging: true,
+);
 ```
 
 ---
 
-## Cleanup
-
-Before your process shuts down, flush any pending events:
-
-```dart
-await provider.shutdown();
-```
-
----
-
-## In-Memory Provider & Console Logging Hook (Local Development & Testing)
-
-This SDK includes utilities for rapid local development and test suites:
+## Local Development
 
 ### InMemoryProvider
 
-The `InMemoryProvider` lets you define and update feature flags in-memory at runtime. This is ideal for unit tests or local development, where you want to avoid network calls or external dependencies.
-
-**Usage Example:**
-
 ```dart
-import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
+final provider = InMemoryProvider();
 
-void main() async {
-  // Create and register the in-memory provider
-  final provider = InMemoryProvider();
-  provider.setFlag('my-flag', true);
-  await OpenFeatureAPI().setProvider(provider);
+// Set test flags
+provider.setFlag('feature-enabled', true);
+provider.setFlag('api-version', 'v2');
+provider.setFlag('rate-limits', {
+  'requests_per_minute': 1000,
+  'burst_size': 50,
+});
 
-  // Evaluate a flag
-  final client = IntelliToggleClient(namespace: 'test');
-  final value = await client.getBooleanValue('my-flag', false);
-  print('my-flag = $value'); // prints: my-flag = true
+await OpenFeatureAPI().setProvider(provider);
 
-  // Listen for configuration changes
-  provider.events.listen((event) {
-    if (event.type == IntelliToggleEventType.configurationChanged) {
-      print('Flags updated!');
-    }
-  });
+// Evaluate flags
+final client = IntelliToggleClient(FeatureClient(
+  metadata: ClientMetadata(name: 'test'),
+  hookManager: HookManager(),
+));
 
-  // Update a flag at runtime
-  provider.setFlag('my-flag', false); // Triggers configurationChanged event
-}
+final enabled = await client.getBooleanValue('feature-enabled', false);
+print('Feature enabled: $enabled');
+
+// Update flags at runtime
+provider.setFlag('feature-enabled', false);
 ```
 
----
-## OREP (OpenFeature Remote Evaluation Protocol) API
+### OREP Server
 
-This provider exposes an [OREP](https://openfeature.dev/specification/appendix-c) HTTP API for remote flag evaluation.
-
-### Starting the OREP Server
+Start remote evaluation server:
 
 ```bash
 dart run bin/orep_server.dart
 ```
 
-The server will listen on `http://localhost:8080`.
+Environment variables:
+```env
+OREP_HOST=0.0.0.0
+OREP_PORT=8080  
+OREP_AUTH_TOKEN=secure-token-123
+```
 
-### Example: Evaluate a Boolean Flag via OREP
-
+Test evaluation:
 ```bash
-curl -X POST http://localhost:8080/v1/flags/bool-flag/evaluate \
+curl -X POST http://localhost:8080/v1/flags/my-flag/evaluate \
+  -H "Authorization: Bearer secure-token-123" \
   -H "Content-Type: application/json" \
-  -d '{"defaultValue": false, "type": "boolean", "context": {}}'
+  -d '{
+    "defaultValue": false,
+    "type": "boolean", 
+    "context": {
+      "targetingKey": "user-123",
+      "role": "admin"
+    }
+  }'
 ```
-
-**Response:**
-```json
-{
-  "flagKey": "bool-flag",
-  "type": "boolean",
-  "value": true,
-  "reason": "STATIC",
-  "evaluatedAt": "2025-06-02T12:34:56.789Z",
-  "evaluatorId": "InMemoryProvider"
-}
-```
-> **Security Note:** The OREP/OPTSP server requires a Bearer token for authentication. Do not expose it to untrusted networks.
-
-## OREP Error Responses
-
-If a request is invalid, the server returns:
-
-```json
-{
-  "error": "Invalid JSON",
-  "details": "FormatException: Unexpected character..."
-}
-```
-
-## Configuration
-
-You can configure the OREP server with environment variables:
-
-- `OREP_HOST` (default: 0.0.0.0)
-- `OREP_PORT` (default: 8080)
-- `OREP_AUTH_TOKEN` (default: changeme-token)
 
 ---
 
-## OPTSP (OpenFeature Provider Test Suite Protocol) API
+## API Integration
 
-This provider supports the [OPTSP](https://openfeature.dev/specification/appendix-d) endpoints for automated conformance testing.
+### OAuth2 Token Exchange
 
-### Example: Seed Flags
+```dart
+Future<String> getAccessToken() async {
+  final response = await http.post(
+    Uri.parse('https://api.intellitoggle.com/oauth/token'),
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: 'grant_type=client_credentials'
+        '&client_id=$clientId'
+        '&client_secret=$clientSecret'
+        '&scope=flags:read flags:evaluate',
+  );
 
-```bash
-curl -X POST http://localhost:8080/v1/provider/seed \
-  -H "Content-Type: application/json" \
-  -d '{"flags": {"my-flag": true, "other-flag": "hello"}}'
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return data['access_token'];
+  }
+  throw Exception('OAuth2 failed: ${response.body}');
+}
 ```
 
-### Example: Reset Provider
+### Direct API Calls
 
-```bash
-curl -X POST http://localhost:8080/v1/provider/reset
+```dart
+Future<Map<String, dynamic>> evaluateFlag({
+  required String flagKey,
+  required String projectId,
+  required Map<String, dynamic> context,
+}) async {
+  final token = await getAccessToken();
+  
+  final response = await http.post(
+    Uri.parse('$baseUrl/api/flags/projects/$projectId/flags/$flagKey/evaluate'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'X-Tenant-ID': tenantId,
+      'Content-Type': 'application/json',
+    },
+    body: jsonEncode(context),
+  );
+  
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  }
+  throw Exception('Evaluation failed: ${response.body}');
+}
 ```
 
-### Example: Get Provider Metadata
+---
 
+## Error Handling
+
+### Exception Types
+
+```dart
+try {
+  final result = await client.getBooleanValue('my-flag', false);
+} on FlagNotFoundException {
+  // Flag doesn't exist
+} on AuthenticationException {
+  // Invalid credentials
+} on ApiException catch (e) {
+  // API error with status code
+  print('API error: ${e.code}');
+} catch (e) {
+  // General error
+}
+```
+
+### Retry Configuration
+
+```dart
+final options = IntelliToggleOptions(
+  maxRetries: 3,
+  retryDelay: Duration(seconds: 1),
+  timeout: Duration(seconds: 10),
+);
+```
+
+---
+
+## Hook System
+
+### Console Logging Hook
+
+```dart
+final hook = ConsoleLoggingHook();
+
+// Add globally
+OpenFeatureAPI().addHooks([hook]);
+
+// Add to specific client
+final hookManager = HookManager();
+hookManager.addHook(hook);
+```
+
+### Custom Analytics Hook
+
+```dart
+class AnalyticsHook extends Hook {
+  @override
+  Future<void> after(HookContext context) async {
+    // Track flag usage
+    analytics.track('flag_evaluated', {
+      'flag_key': context.flagKey,
+      'result': context.result,
+    });
+  }
+}
+```
+
+---
+
+## Flutter Integration (Brief)
+
+For Flutter applications, IntelliToggle provides UI state management and direct API integration:
+
+```dart
+// Add to pubspec.yaml
+dependencies:
+  flutter_dotenv: ^5.2.1
+  provider: ^6.1.5
+
+// Basic Flutter service
+class IntelliToggleService extends ChangeNotifier {
+  Future<String> getAccessToken() async {
+    // OAuth2 implementation
+  }
+  
+  Future<Map<String, dynamic>> evaluateFlag({
+    required String projectId,
+    required String flagKey,
+    required Map<String, dynamic> context,
+  }) async {
+    // Direct API calls
+  }
+}
+```
+
+Flutter apps use direct HTTP API calls rather than the OpenFeature provider pattern. See the [sample Flutter app](https://github.com/aortem/intellitoggle-openfeature-provider-dart-server/tree/main/example) for complete implementation.
+
+---
+
+## Provider Options
+
+### IntelliToggleOptions
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `baseUri` | API endpoint | `https://api.intellitoggle.com` |
+| `timeout` | Request timeout | `10 seconds` |
+| `enablePolling` | Poll for config changes | `true` |
+| `pollingInterval` | Polling frequency | `5 minutes` |
+| `enableStreaming` | Real-time updates | `false` |
+| `maxRetries` | Retry attempts | `3` |
+| `enableLogging` | Debug logging | `false` |
+
+### Factory Methods
+
+```dart
+// Production optimized
+IntelliToggleOptions.production()
+
+// Development optimized  
+IntelliToggleOptions.development()
+```
+
+---
+
+## Context Types
+
+### Single Context
+
+```dart
+{
+  'targetingKey': 'user-123',
+  'kind': 'user',
+  'role': 'admin',
+  'plan': 'enterprise'
+}
+```
+
+### Multi-Context
+
+```dart
+{
+  'kind': 'multi',
+  'user': {
+    'targetingKey': 'user-123',
+    'role': 'admin'
+  },
+  'organization': {
+    'targetingKey': 'org-456', 
+    'plan': 'enterprise'
+  }
+}
+```
+
+### Reserved Attributes
+
+- `targetingKey` - Required identifier for targeting
+- `kind` - Context type (`user`, `organization`, `device`, `multi`)
+- `anonymous` - Anonymous context flag
+- `privateAttributes` - Attributes to exclude from logs
+
+---
+
+## OREP/OPTSP Support
+
+### OREP Endpoints
+
+- `POST /v1/flags/{flagKey}/evaluate` - Evaluate flag
+- `GET /v1/provider/metadata` - Provider info
+
+### OPTSP Endpoints  
+
+- `POST /v1/provider/seed` - Seed test flags
+- `POST /v1/provider/reset` - Clear all flags
+- `POST /v1/provider/shutdown` - Shutdown provider
+
+### Authentication
+
+All endpoints require Bearer token:
 ```bash
-curl http://localhost:8080/v1/provider/metadata
+curl -H "Authorization: Bearer changeme-token" ...
 ```
 
 ---
 
 ## Security
 
-All OREP/OPTSP endpoints require a Bearer token for authentication.
+### TLS Requirements
 
-Set the token via the `OREP_AUTH_TOKEN` environment variable (default: `changeme-token`).
+Production deployments require HTTPS endpoints. HTTP only allowed for `localhost`.
 
-Example request:
-```bash
-curl -H "Authorization: Bearer changeme-token" ...
+### Token Management
+
+- Client secrets are never logged or exposed
+- Tokens have configurable TTL (default: 60 minutes)  
+- Automatic token refresh with 10-minute buffer
+
+### Tenant Isolation
+
+All requests include `X-Tenant-ID` header for multi-tenancy:
+
+```dart
+headers: {
+  'Authorization': 'Bearer $token',
+  'X-Tenant-ID': '$tenantId',
+}
 ```
 
 ---
