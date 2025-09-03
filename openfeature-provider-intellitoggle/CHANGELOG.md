@@ -1,28 +1,30 @@
-# Changelog
+## 0.0.5
 
-## [0.0.4] - 2025-06-21
+### Changed
+- Updated README with improved usage documentation.
 
-### Added
-- Update repository url
+### Removed
+- Dependency on deprecated `gherkin` package.
 
-## [0.0.3] - 2025-06-21
+## 0.0.4
 
-### Added
-- Update ReadMe and GitHub Repo Link
+### Changed
+- Updated repository URL.
 
-## [0.0.2] - 2025-06-20
+## 0.0.3
 
-### Added
-- Implement @Override ProviderMetadata getter with required fields.
-- Ensure FlagEvaluationResult sets all required fields in all code paths.
-- Add and use correct error codes (FLAG_NOT_FOUND, TYPE_MISMATCH, GENERAL) for all error scenarios.
-- Implement proper provider state transitions per OpenFeature lifecycle.
+### Changed
+- Updated README and GitHub repository link.
 
-
-## [0.0.1] - 2025-06-10
+## 0.0.2
 
 ### Added
-- Initial release for intellitoggle-openfeature-provider-dart.
+- Implemented `@override` for `ProviderMetadata` getter with required fields.
+- Ensured `FlagEvaluationResult` sets all required fields in every code path.
+- Added proper error codes (`FLAG_NOT_FOUND`, `TYPE_MISMATCH`, `GENERAL`) for error scenarios.
+- Implemented correct provider state transitions per OpenFeature lifecycle.
 
+## 0.0.1
 
-
+### Added
+- Initial release of `intellitoggle-openfeature-provider-dart`.

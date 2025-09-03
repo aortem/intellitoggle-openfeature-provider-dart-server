@@ -1,19 +1,18 @@
 name: openfeature_provider_intellitoggle
 description: Official IntelliToggle provider for the OpenFeature Dart Server SDK.
-version: 0.0.4
+version: 0.0.5
 homepage: https://intellitoggle.com
 repository: https://github.com/aortem/intellitoggle-openfeature-provider-dart-server
 
 environment:
-  sdk: ^3.8.1
+  sdk: ^3.9.2
 
 dependencies:
-  openfeature_dart_server_sdk: ^0.0.10
-  http: ^1.1.0
-  meta: ^1.9.1
+  openfeature_dart_server_sdk: ^0.0.11
+  http: ^1.5.0
+  meta: ^1.17.0
 
 dev_dependencies:
-  test: ^1.24.0
-  gherkin: ^3.1.0
+  ds_tools_testing: ^0.1.0
 
 
