@@ -68,7 +68,12 @@ void main() async {
 Use the included `InMemoryProvider` for fast testing without external dependencies:
 
 ```dart
-final provider = InMemoryProvider();
+// Seed initial flags at construction (optional)
+final provider = InMemoryProvider(initialFlags: {
+  'experimental-mode': true,
+  'welcome-text': (Map<String, dynamic> ctx) =>
+      ctx['role'] == 'beta_tester' ? 'Welcome, beta!' : 'Welcome!',
+});
 provider.setFlag('experimental-mode', true);
 
 await OpenFeatureAPI().setProvider(provider);
@@ -78,8 +83,47 @@ final enabled = await client.getBooleanValue('experimental-mode', false);
 print('Flag = $enabled'); // true
 ```
 
+Listen for configuration change events (union of previous and new keys is emitted):
+
+```dart
+final sub = provider.events.listen((e) {
+  if (e.type == IntelliToggleEventType.configurationChanged) {
+    print('Flags changed: ${e.data?['flagsChanged']}');
+  }
+});
+```
+
+Context-aware flags can be set with a callback:
+
+```dart
+provider.setFlag('is-admin', (Map<String, dynamic> ctx) => ctx['role'] == 'admin');
+```
+
 ---
 
+## 🪵 Console Logging Hook
+
+Log evaluation lifecycle events to stdout. Optionally include the evaluation context for debugging:
+
+`dart
+final hook = ConsoleLoggingHook(printContext: true);
+
+// Add globally
+OpenFeatureAPI().addHooks([hook]);
+
+// Or add to a specific client
+final hookManager = HookManager();
+hookManager.addHook(hook);
+`
+
+Example log entries (JSON):
+
+`
+[OpenFeature] {"stage":"before","domain":"flag_evaluation","provider_name":"InMemoryProvider","flag_key":"new-ui","default_value":false}
+[OpenFeature] {"stage":"after","domain":"flag_evaluation","provider_name":"InMemoryProvider","flag_key":"new-ui","default_value":false,"result":true}
+`
+
+---
 ## ⚙️ OREP Server (Optional)
 
 Start a remote flag evaluation API:
