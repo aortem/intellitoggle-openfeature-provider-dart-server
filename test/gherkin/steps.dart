@@ -192,10 +192,11 @@ StepDefinitionGeneric _abThenHooksCalledWithEvaluationDetails() {
       }
 
       for (final row in table.rows) {
-        if (row.columns.length < 3) continue;
-        final dataType = row.columns[0];
-        final key = row.columns[1];
-        final value = row.columns[2];
+        final cols = row.columns.toList();
+        if (cols.length < 3) continue;
+        final dataType = cols.elementAt(0) ?? '';
+        final key = cols.elementAt(1) ?? '';
+        final value = cols.elementAt(2) ?? '';
         final expected = parseExpected(dataType, value);
 
         dynamic actual;
