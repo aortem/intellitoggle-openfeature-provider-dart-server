@@ -115,5 +115,28 @@ MIT
 
 ---
 
-Let me know if you'd like a `bin/orep_server.dart` usage snippet or an `example/main.dart` to pair with this for pub.dev’s [score metrics](https://dart.dev/tools/pub/score).
+Let me know if you'd like a `bin/orep_server.dart` usage snippet or an `example/main.dart` to pair with this for pub.dev's [score metrics](https://dart.dev/tools/pub/score).
 ```
+
+---
+
+## gRPC Server
+
+Start the OFREP gRPC server:
+
+```bash
+dart run bin/ofrep_grpc_server.dart
+```
+
+Environment variables:
+
+| Variable            | Default       |
+| ------------------- | ------------- |
+| `OREP_GRPC_HOST`    | `0.0.0.0`     |
+| `OREP_GRPC_PORT`    | `50051`       |
+| `OREP_AUTH_TOKEN`   | `changeme-token` |
+| `OAUTH_JWT_HS256_SECRET` | (unset) |
+| `OAUTH_EXPECTED_AUD`     | (unset) |
+| `OAUTH_EXPECTED_ISS`     | (unset) |
+
+Protobufs are in `protos/ofrep.proto`. Generated Dart used by the server is vendored under `lib/src/gen/` for convenience.

@@ -1,0 +1,66 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:test/test.dart';
+
+void main() {
+  final goodToken = Platform.environment['OREP_AUTH_TOKEN'] ?? 'changeme-token';
+  final badToken = 'bad-token';
+
+  group('OREP HTTP parity and auth', () {
+    test('GET evaluate matches POST evaluate (boolean)', () async {
+      // Ensure server has the flag (tests may have reset earlier)
+      {
+        final client = HttpClient();
+        final seed = await client.postUrl(Uri.parse('http://localhost:8080/v1/provider/seed'));
+        seed.headers.contentType = ContentType.json;
+        seed.headers.add('authorization', 'Bearer $goodToken');
+        seed.write(jsonEncode({'flags': {'bool-flag': true}}));
+        final seedResp = await seed.close();
+        expect(seedResp.statusCode, 200);
+      }
+      // POST
+      final client = HttpClient();
+      final post = await client
+          .postUrl(Uri.parse('http://localhost:8080/v1/flags/bool-flag/evaluate'));
+      post.headers.contentType = ContentType.json;
+      post.headers.add('authorization', 'Bearer $goodToken');
+      post.write(jsonEncode({'defaultValue': false, 'type': 'boolean'}));
+      final postResp = await post.close();
+      expect(postResp.statusCode, 200);
+      final postJson = jsonDecode(await utf8.decoder.bind(postResp).join());
+
+      // GET
+      final get = await client.getUrl(Uri.parse(
+          'http://localhost:8080/v1/flags/bool-flag/evaluate?type=boolean&default=false'));
+      get.headers.add('authorization', 'Bearer $goodToken');
+      final getResp = await get.close();
+      expect(getResp.statusCode, 200);
+      final getJson = jsonDecode(await utf8.decoder.bind(getResp).join());
+
+      expect(getJson['value'], postJson['value']);
+      expect(getJson['type'], postJson['type']);
+    });
+
+    test('Unauthorized returns 401', () async {
+      final client = HttpClient();
+      final req = await client
+          .postUrl(Uri.parse('http://localhost:8080/v1/flags/bool-flag/evaluate'));
+      req.headers.contentType = ContentType.json;
+      req.headers.add('authorization', 'Bearer $badToken');
+      req.write(jsonEncode({'defaultValue': false, 'type': 'boolean'}));
+      final resp = await req.close();
+      expect(resp.statusCode, 401);
+    });
+
+    test('Unknown flag returns 404', () async {
+      final client = HttpClient();
+      final req = await client
+          .postUrl(Uri.parse('http://localhost:8080/v1/flags/does-not-exist/evaluate'));
+      req.headers.contentType = ContentType.json;
+      req.headers.add('authorization', 'Bearer $goodToken');
+      req.write(jsonEncode({'defaultValue': false, 'type': 'boolean'}));
+      final resp = await req.close();
+      expect(resp.statusCode, 404);
+    });
+  });
+}

@@ -1,0 +1,34 @@
+syntax = "proto3";
+package ofrep.v1;
+
+option go_package = "github.com/intellitoggle/ofrep;ofrep";
+
+// Minimal OFREP v1-like service for remote evaluation
+service OfrepService {
+  rpc GetEvaluation (EvaluationRequest) returns (EvaluationResponse);
+}
+
+message EvaluationRequest {
+  string flag_key = 1;
+  map<string, string> context = 2; // Simplified for demo
+  Value default_value = 3;
+}
+
+message EvaluationResponse {
+  string flag_key = 1;
+  Value value = 2;
+  string reason = 3;
+  string evaluator_id = 4;
+  string evaluated_at = 5; // RFC3339 timestamp
+}
+
+message Value {
+  oneof kind {
+    bool bool_value = 1;
+    string string_value = 2;
+    int64 int_value = 3;
+    double double_value = 4;
+    string json_object = 5; // JSON-encoded object
+  }
+}
+

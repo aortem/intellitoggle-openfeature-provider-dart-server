@@ -63,6 +63,9 @@ class InMemoryProvider implements FeatureProvider {
     _emitConfigChanged();
   }
 
+  /// Returns true if a flag with [key] exists in the provider.
+  bool hasFlag(String key) => _flags.containsKey(key);
+
   /// Emit a PROVIDER_CONFIGURATION_CHANGED event to listeners.
   void _emitConfigChanged() {
     _eventController.add(IntelliToggleEvent.configurationChanged(_flags.keys.toList()));

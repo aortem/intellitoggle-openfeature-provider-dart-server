@@ -1,0 +1,113 @@
+openapi: 3.0.3
+info:
+  title: IntelliToggle OREP/HTTP
+  version: 1.0.0
+  description: HTTP gateway for OpenFeature Remote Evaluation Protocol (OFREP)
+servers:
+  - url: http://localhost:8080
+paths:
+  /v1/flags/{flagKey}/evaluate:
+    get:
+      summary: Evaluate a flag (GET parity)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: flagKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [boolean, string, integer, double, float, object]
+        - name: default
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: context
+          in: query
+          required: false
+          schema:
+            type: string
+            description: JSON-encoded evaluation context
+      responses:
+        '200':
+          description: Evaluation detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationDetail'
+        '401': { description: Unauthorized }
+        '404': { description: Flag not found }
+    post:
+      summary: Evaluate a flag (JSON)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: flagKey
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, defaultValue]
+              properties:
+                type:
+                  type: string
+                  enum: [boolean, string, integer, double, float, object]
+                defaultValue: {}
+                context:
+                  type: object
+      responses:
+        '200':
+          description: Evaluation detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationDetail'
+        '401': { description: Unauthorized }
+        '404': { description: Flag not found }
+  /v1/provider/metadata:
+    get:
+      summary: Provider metadata
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name: { type: string }
+                  version: { type: string }
+                  capabilities:
+                    type: array
+                    items: { type: string }
+securitySchemes:
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    EvaluationDetail:
+      type: object
+      properties:
+        flagKey: { type: string }
+        type: { type: string }
+        value: {}
+        reason: { type: string }
+        evaluatedAt: { type: string, format: date-time }
+        evaluatorId: { type: string }
+
