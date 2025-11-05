@@ -13,6 +13,10 @@ String? resolveFeature(String name) {
     p.normalize(p.join(Directory.current.path, 'vendor', 'openfeature-spec', gherkinRel, name)),
     // fallback if tests are triggered from repo root
     p.normalize(p.join(Directory.current.path, '..', 'vendor', 'openfeature-spec', gherkinRel, name)),
+    // running from repo root, vendor submodule is inside the inner package
+    p.normalize(p.join(Directory.current.path, 'openfeature-provider-intellitoggle', 'vendor', 'openfeature-spec', gherkinRel, name)),
+    // running from inside inner package but with nested structure
+    p.normalize(p.join(Directory.current.path, '..', 'openfeature-provider-intellitoggle', 'vendor', 'openfeature-spec', gherkinRel, name)),
   ];
   for (final c in candidates) {
     if (File(c).existsSync()) return c;
