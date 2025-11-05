@@ -274,8 +274,15 @@ StepDefinitionGeneric _abThenHooksCalledWithEvaluationDetails() {
               continue;
             }
           case 'error_code':
-            actual = details?.errorCode;
-            break;
+            {
+              final raw = details?.errorCode;
+              final actCode = raw == null
+                  ? null
+                  : raw.toString().split('.').last.toUpperCase();
+              final expCode = expected?.toString().toUpperCase();
+              expect(actCode, equals(expCode), reason: 'Mismatch for error_code');
+              continue;
+            }
           default:
             continue;
         }
