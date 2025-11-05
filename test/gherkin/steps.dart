@@ -39,6 +39,31 @@ StepDefinitionGeneric _abGivenTypedFlag(String type) {
       default:
         world.lastDefaultValueUsed = fallback;
     }
+
+    // Seed in-memory provider for known non-missing flags so evaluation yields STATIC
+    if (!key.toLowerCase().startsWith('missing-') && !key.toLowerCase().startsWith('wrong-')) {
+      switch (key) {
+        case 'boolean-flag':
+          world.provider.setFlag(key, true);
+          break;
+        case 'string-flag':
+          world.provider.setFlag(key, 'hi');
+          break;
+        case 'integer-flag':
+          world.provider.setFlag(key, 10);
+          break;
+        case 'float-flag':
+          world.provider.setFlag(key, 0.5);
+          break;
+        case 'object-flag':
+          world.provider.setFlag(key, {
+            'showImages': true,
+            'title': 'Check out these pics!',
+            'imagesPerPage': 100,
+          });
+          break;
+      }
+    }
   });
 }
 
