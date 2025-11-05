@@ -82,10 +82,22 @@ class _CtxLevels {
 final _levels = _CtxLevels();
 
 StepDefinitionGeneric _abGivenTableOfLevels() {
-  return given<inner.StepWorld>(
+  return given1<GherkinTable, inner.StepWorld>(
     RegExp(r'A table with levels of increasing precedence', caseSensitive: false),
-    (context) async {
-      _levels.precedence = ['Client', 'Invocation', 'Before Hooks'];
+    (table, context) async {
+      // The concrete order is provided by the table in the feature file.
+      // We read it if present; otherwise use the default commonly used in examples.
+      final rows = table.rows.toList();
+      final collected = <String>[];
+      for (final r in rows) {
+        final cols = r.columns.toList();
+        if (cols.isEmpty) continue;
+        final v = (cols.elementAt(0) ?? '').trim();
+        if (v.isNotEmpty) collected.add(v);
+      }
+      _levels.precedence = collected.isNotEmpty
+          ? collected.where((e) => e != 'API').toList()
+          : ['Client', 'Invocation', 'Before Hooks'];
     },
   );
 }
@@ -167,7 +179,7 @@ StepDefinitionGeneric _abThenErrorHookExecuted() {
 StepDefinitionGeneric _abThenHooksCalledWithEvaluationDetails() {
   return then1<GherkinTable, inner.StepWorld>(
     RegExp(
-      r'(the \"after, finally\" hooks should be called with evaluation details|the \"finally\" hooks should be called with evaluation details)',
+      r'(?:the \"after, finally\" hooks should be called with evaluation details|the \"finally\" hooks should be called with evaluation details)',
       caseSensitive: false,
     ),
     (table, context) async {
@@ -233,12 +245,21 @@ StepDefinitionGeneric _abThenHooksCalledWithEvaluationDetails() {
 
 // Metadata adapters
 StepDefinitionGeneric _abThenResolvedMetadataShouldContain() {
-  return then<inner.StepWorld>(
+  return then1<GherkinTable, inner.StepWorld>(
     RegExp(r'the resolved metadata should contain', caseSensitive: false),
-    (context) async {
+    (table, context) async {
       final details = context.world.lastDetailsResult as dynamic;
       final md = (details?.metadata ?? {}) as Map?;
       expect(md != null && md.isNotEmpty, isTrue, reason: 'Expected non-empty metadata');
+
+      // Optionally, check that each key in the table exists in metadata.
+      for (final row in table.rows) {
+        final cols = row.columns.toList();
+        if (cols.length < 1) continue;
+        final key = (cols.elementAt(0) ?? '').trim();
+        if (key.isEmpty) continue;
+        expect((md as Map)[key], isNotNull, reason: 'Metadata missing key: $key');
+      }
     },
   );
 }
