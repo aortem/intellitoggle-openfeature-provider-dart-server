@@ -113,7 +113,9 @@ class InMemoryProvider implements FeatureProvider {
         value: defaultValue,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
-        reason: 'DEFAULT',
+        // Treat missing flag as an error to satisfy hooks.feature expectations
+        reason: 'ERROR',
+        errorCode: ErrorCode.FLAG_NOT_FOUND,
       );
     }
     if (value is! bool) {
@@ -123,6 +125,7 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
+        errorCode: ErrorCode.TYPE_MISMATCH,
       );
     }
     return FlagEvaluationResult<bool>(
@@ -150,7 +153,8 @@ class InMemoryProvider implements FeatureProvider {
         value: defaultValue,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
-        reason: 'DEFAULT',
+        reason: 'ERROR',
+        errorCode: ErrorCode.FLAG_NOT_FOUND,
       );
     }
     if (value is! String) {
@@ -160,6 +164,7 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
+        errorCode: ErrorCode.TYPE_MISMATCH,
       );
     }
     return FlagEvaluationResult<String>(
@@ -187,7 +192,8 @@ class InMemoryProvider implements FeatureProvider {
         value: defaultValue,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
-        reason: 'DEFAULT',
+        reason: 'ERROR',
+        errorCode: ErrorCode.FLAG_NOT_FOUND,
       );
     }
     if (value is! int) {
@@ -197,6 +203,7 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
+        errorCode: ErrorCode.TYPE_MISMATCH,
       );
     }
     return FlagEvaluationResult<int>(
@@ -224,7 +231,8 @@ class InMemoryProvider implements FeatureProvider {
         value: defaultValue,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
-        reason: 'DEFAULT',
+        reason: 'ERROR',
+        errorCode: ErrorCode.FLAG_NOT_FOUND,
       );
     }
     if (value is! double) {
@@ -234,6 +242,7 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
+        errorCode: ErrorCode.TYPE_MISMATCH,
       );
     }
     return FlagEvaluationResult<double>(
@@ -261,7 +270,8 @@ class InMemoryProvider implements FeatureProvider {
         value: defaultValue,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
-        reason: 'DEFAULT',
+        reason: 'ERROR',
+        errorCode: ErrorCode.FLAG_NOT_FOUND,
       );
     }
     if (value is! Map<String, dynamic>) {
@@ -271,6 +281,7 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
+        errorCode: ErrorCode.TYPE_MISMATCH,
       );
     }
     return FlagEvaluationResult<Map<String, dynamic>>(
