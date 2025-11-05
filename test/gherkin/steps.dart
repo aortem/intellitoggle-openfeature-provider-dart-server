@@ -165,7 +165,7 @@ StepDefinitionGeneric _abThenErrorHookExecuted() {
 }
 
 StepDefinitionGeneric _abThenHooksCalledWithEvaluationDetails() {
-  return then1<DataTable, inner.StepWorld>(
+  return then1<GherkinTable, inner.StepWorld>(
     RegExp(
       r'(the \"after, finally\" hooks should be called with evaluation details|the \"finally\" hooks should be called with evaluation details)',
       caseSensitive: false,
@@ -273,4 +273,3 @@ final List<StepDefinitionGeneric<World>> steps = [
   _abThenResolvedMetadataShouldContain(),
   _abThenResolvedMetadataIsEmpty(),
 ];
-
