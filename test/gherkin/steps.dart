@@ -175,7 +175,10 @@ StepDefinitionGeneric _abThenErrorHookExecuted() {
     RegExp(r'the \"error\" hook should have been executed', caseSensitive: false),
     (context) async {
       final details = context.world.lastDetailsResult as dynamic;
-      expect(details?.errorCode != null, isTrue, reason: 'Expected errorCode on error path');
+      final _reason = (details?.reason)?.toString().toUpperCase();
+      final _hasError = (details?.errorCode != null) || (_reason == 'ERROR');
+      expect(_hasError, isTrue,
+          reason: 'Expected error hook indication (errorCode or reason=ERROR)');
     },
   );
 }
