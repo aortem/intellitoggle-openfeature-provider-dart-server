@@ -18,11 +18,12 @@ gherkin_e2e:
   script:
     - dart --version
     - git submodule update --init --recursive
+    - cd openfeature-provider-intellitoggle
     - dart pub get
     - dart test -r expanded --file-reporter=junit:test-results.xml test/gherkin/gherkin_suite_test.dart
   artifacts:
     when: always
     reports:
-      junit: test-results.xml
+      junit: openfeature-provider-intellitoggle/test-results.xml
     paths:
-      - test/gherkin/_tmp/
+      - openfeature-provider-intellitoggle/test/gherkin/_tmp/
