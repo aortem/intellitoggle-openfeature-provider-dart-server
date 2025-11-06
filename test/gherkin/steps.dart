@@ -40,8 +40,36 @@ StepDefinitionGeneric _abGivenTypedFlag(String type) {
         world.lastDefaultValueUsed = fallback;
     }
 
-    // Seed in-memory provider for known non-missing flags so evaluation yields STATIC
-    if (!key.toLowerCase().startsWith('missing-') && !key.toLowerCase().startsWith('wrong-')) {
+    // Seed in-memory provider
+    // - known non-missing flags -> correct type so reason=STATIC
+    // - keys starting with 'wrong-' -> deliberately wrong type to force TYPE_MISMATCH
+    if (key.toLowerCase().startsWith('wrong-')) {
+      switch (type.toLowerCase()) {
+        case 'boolean':
+          // wrong type: provide a String
+          world.provider.setFlag(key, 'not-a-bool');
+          break;
+        case 'string':
+          // wrong type: provide a bool
+          world.provider.setFlag(key, true);
+          break;
+        case 'integer':
+          // wrong type: provide a String
+          world.provider.setFlag(key, 'not-an-int');
+          break;
+        case 'float':
+          // wrong type: provide a String
+          world.provider.setFlag(key, 'not-a-double');
+          break;
+        case 'object':
+          // wrong type: provide a bool
+          world.provider.setFlag(key, false);
+          break;
+        default:
+          // leave unseeded if unknown
+          break;
+      }
+    } else if (!key.toLowerCase().startsWith('missing-')) {
       switch (key) {
         case 'boolean-flag':
           world.provider.setFlag(key, true);
