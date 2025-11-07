@@ -8,8 +8,8 @@ environment:
 
 # Add regular dependencies here.
 dependencies:
-  openfeature_dart_server_sdk: 0.0.10
-  openfeature_provider_intellitoggle: ^0.0.4
+  openfeature_dart_server_sdk: 0.0.13
+  openfeature_provider_intellitoggle: ^0.0.5
   http: ^1.1.0
   dart_jsonwebtoken: ^2.12.2
 
