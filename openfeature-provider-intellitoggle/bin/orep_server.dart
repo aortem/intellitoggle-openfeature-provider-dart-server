@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
-import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:jwt_generator/jwt_generator.dart';
 //import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 
 Future<void> main() async {
@@ -281,16 +281,22 @@ Future<bool> _isAuthorized(HttpRequest req, String requiredToken) async {
   // First, allow API key mode when token matches required token
   if (token == requiredToken && requiredToken.isNotEmpty) return true;
 
-  // Optional OAuth/JWT HS256 verification
+  // Optional JWT HS256 verification using internal library
   final hsSecret = Platform.environment['OAUTH_JWT_HS256_SECRET'];
   if (hsSecret != null && hsSecret.isNotEmpty) {
     try {
-      final jwt = JWT.verify(token, SecretKey(hsSecret));
-      // Optional audience/issuer checks
+      final parsed   = ParsedJwt.parse(token);
+      final verifier = HmacSignatureVerifier(secret: utf8.encode(hsSecret));
+      final ok       = verifier.verify(parsed.signingInput, parsed.signatureB64);
+      if (!ok) return false;
+      // Optional claim checks
       final expectedAud = Platform.environment['OAUTH_EXPECTED_AUD'];
       final expectedIss = Platform.environment['OAUTH_EXPECTED_ISS'];
-      if (expectedAud != null && jwt.payload['aud'] != expectedAud) return false;
-      if (expectedIss != null && jwt.payload['iss'] != expectedIss) return false;
+      if (expectedAud != null || expectedIss != null) {
+        final payload = _decodeJwtPayload(token);
+        if (expectedAud != null && payload['aud'] != expectedAud) return false;
+        if (expectedIss != null && payload['iss'] != expectedIss) return false;
+      }
       return true;
     } catch (_) {
       return false;
@@ -298,6 +304,23 @@ Future<bool> _isAuthorized(HttpRequest req, String requiredToken) async {
   }
 
   return false;
+}
+
+Map<String, dynamic> _decodeJwtPayload(String token) {
+  try {
+    final parts = token.split('.');
+    if (parts.length != 3) return {};
+    String normalized = parts[1].replaceAll('-', '+').replaceAll('_', '/');
+    while (normalized.length % 4 != 0) {
+      normalized += '=';
+    }
+    final payloadBytes = base64.decode(normalized);
+    final jsonStr = utf8.decode(payloadBytes);
+    final map = jsonDecode(jsonStr);
+    return map is Map<String, dynamic> ? map : {};
+  } catch (_) {
+    return {};
+  }
 }
 
 dynamic _parseDefault(String? raw, String? type) {

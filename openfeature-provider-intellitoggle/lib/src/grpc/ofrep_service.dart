@@ -6,20 +6,15 @@ import 'package:grpc/grpc.dart';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 import 'package:openfeature_provider_intellitoggle/src/gen/ofrep.pb.dart' as ofrep;
 import 'package:openfeature_provider_intellitoggle/src/gen/ofrep.pbgrpc.dart' as ofrepgrpc;
-import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:fixnum/fixnum.dart' as $fixnum;
+import 'package:jwt_generator/jwt_generator.dart';
 
 class OfrepService extends ofrepgrpc.OfrepServiceBase {
   final InMemoryProvider provider;
   final String apiKey;
-  final String? hsSecret;
-  final String? expectedAud;
-  final String? expectedIss;
+  // JWT verification via internal tooling can be added later if required.
 
-  OfrepService(this.provider, this.apiKey)
-      : hsSecret = Platform.environment['OAUTH_JWT_HS256_SECRET'],
-        expectedAud = Platform.environment['OAUTH_EXPECTED_AUD'],
-        expectedIss = Platform.environment['OAUTH_EXPECTED_ISS'];
+  OfrepService(this.provider, this.apiKey);
 
   @override
   Future<ofrep.EvaluationResponse> getEvaluation(
@@ -91,14 +86,20 @@ class OfrepService extends ofrepgrpc.OfrepServiceBase {
     }
     final token = auth.substring(7);
     if (token == apiKey && apiKey.isNotEmpty) return true;
-    if (hsSecret != null && hsSecret!.isNotEmpty) {
+    // Optional HS256 verification using internal jwt_generator
+    final hsSecret = Platform.environment['OAUTH_JWT_HS256_SECRET'];
+    if (hsSecret != null && hsSecret.isNotEmpty) {
       try {
-        final jwt = JWT.verify(token, SecretKey(hsSecret!));
-        if (expectedAud != null && jwt.payload['aud'] != expectedAud) {
-          return false;
-        }
-        if (expectedIss != null && jwt.payload['iss'] != expectedIss) {
-          return false;
+        final parsed   = ParsedJwt.parse(token);
+        final verifier = HmacSignatureVerifier(secret: $convert.utf8.encode(hsSecret));
+        final ok       = verifier.verify(parsed.signingInput, parsed.signatureB64);
+        if (!ok) return false;
+        final expectedAud = Platform.environment['OAUTH_EXPECTED_AUD'];
+        final expectedIss = Platform.environment['OAUTH_EXPECTED_ISS'];
+        if (expectedAud != null || expectedIss != null) {
+          final payload = _decodeJwtPayload(token);
+          if (expectedAud != null && payload['aud'] != expectedAud) return false;
+          if (expectedIss != null && payload['iss'] != expectedIss) return false;
         }
         return true;
       } catch (_) {
@@ -106,5 +107,22 @@ class OfrepService extends ofrepgrpc.OfrepServiceBase {
       }
     }
     return false;
+  }
+
+  Map<String, dynamic> _decodeJwtPayload(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return {};
+      String normalized = parts[1].replaceAll('-', '+').replaceAll('_', '/');
+      while (normalized.length % 4 != 0) {
+        normalized += '=';
+      }
+      final payloadBytes = $convert.base64.decode(normalized);
+      final jsonStr = $convert.utf8.decode(payloadBytes);
+      final map = $convert.jsonDecode(jsonStr);
+      return map is Map<String, dynamic> ? map : {};
+    } catch (_) {
+      return {};
+    }
   }
 }

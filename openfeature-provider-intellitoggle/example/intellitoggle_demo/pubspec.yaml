@@ -11,7 +11,7 @@ dependencies:
   openfeature_dart_server_sdk: 0.0.10
   openfeature_provider_intellitoggle: ^0.0.4
   http: ^1.1.0
-  dart_jsonwebtoken: ^2.12.2
+  jwt_generator: ^0.0.8
 
 dev_dependencies:
   lints: ^6.0.0
