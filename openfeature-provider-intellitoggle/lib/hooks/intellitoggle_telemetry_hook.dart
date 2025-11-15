@@ -1,5 +1,8 @@
 import 'package:openfeature_dart_server_sdk/hooks.dart';
 import '../utils/telemetry.dart';
+import 'package:openfeature_dart_server_sdk/feature_provider.dart';
+
+
 
 class IntelliToggleTelemetryHook extends Hook {
   TelemetrySpan? _span;
@@ -25,30 +28,42 @@ class IntelliToggleTelemetryHook extends Hook {
   }
 
   @override
-  Future<void> after(HookContext context) async {
+  Future<void> after(HookContext context, [Object? result]) async {
     if (_span != null) {
+      _span!.setAttribute('feature_flag.variant', result);
+
       _span!.setAttribute('feature_flag.evaluation.success', true);
       Telemetry.metrics.increment('evaluation.success');
-      Telemetry.endSpan(_span!);
+
     }
   }
 
+
   @override
-  Future<void> error(HookContext context) async {
+  Future<void> error(HookContext context, [Object? error]) async {
     if (_span != null) {
+
+      _span!.setAttribute('feature_flag.variant', 'error');
       _span!.setAttribute('feature_flag.evaluation.success', false);
       _span!.setAttribute('error.code', 'evaluation_failed');
       Telemetry.metrics.increment('evaluation.error');
-      Telemetry.endSpan(_span!);
+
     }
   }
+
 
   @override
   Future<void> finally_(HookContext context, [Object? result, Object? error]) async {
     if (_span != null) {
       final end = DateTime.now();
       final latency = end.difference(_startTime);
+
       Telemetry.recordLatency(context.flagKey, latency);
+
+      Telemetry.endSpan(_span!);
     }
   }
+
+  
+
 }
