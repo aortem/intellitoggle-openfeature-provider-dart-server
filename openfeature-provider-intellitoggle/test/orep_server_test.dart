@@ -3,10 +3,13 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 const _testToken = 'changeme-token';
+const _port = 59987;
+
+String _baseUrl(String path) => 'http://localhost:$_port$path';
 
 Future<void> _waitForServer() async {
   final client = HttpClient();
-  final uri = Uri.parse('http://localhost:8080/v1/provider/metadata');
+  final uri = Uri.parse(_baseUrl('/v1/provider/metadata'));
   for (var i = 0; i < 50; i++) {
     try {
       final req = await client.getUrl(uri).timeout(const Duration(seconds: 1));
@@ -27,7 +30,7 @@ Future<void> _waitForServer() async {
 
 Future<void> _seedBoolFlag() async {
   final client = HttpClient();
-  final uri = Uri.parse('http://localhost:8080/v1/provider/seed');
+  final uri = Uri.parse(_baseUrl('/v1/provider/seed'));
   final req = await client.postUrl(uri);
   req.headers.contentType = ContentType.json;
   req.headers.add('authorization', 'Bearer $_testToken');
@@ -48,7 +51,7 @@ void main() {
         ...Platform.environment,
         'OREP_AUTH_TOKEN': _testToken,
         'OREP_HOST': '127.0.0.1',
-        'OREP_PORT': '8080',
+        'OREP_PORT': '$_port',
       },
     );
     await _waitForServer();
@@ -62,7 +65,7 @@ void main() {
 
   test('OREP boolean flag evaluation endpoint returns correct value', () async {
     final client = HttpClient();
-    final req = await client.postUrl(Uri.parse('http://localhost:8080/v1/flags/bool-flag/evaluate'));
+    final req = await client.postUrl(Uri.parse(_baseUrl('/v1/flags/bool-flag/evaluate')));
     req.headers.contentType = ContentType.json;
     req.headers.add('authorization', 'Bearer $_testToken');
     req.write(jsonEncode({'defaultValue': false, 'type': 'boolean', 'context': {}}));
@@ -80,7 +83,7 @@ void main() {
 
   test('OPTSP metadata endpoint returns provider info', () async {
     final client = HttpClient();
-    final req = await client.getUrl(Uri.parse('http://localhost:8080/v1/provider/metadata'));
+    final req = await client.getUrl(Uri.parse(_baseUrl('/v1/provider/metadata')));
     req.headers.add('authorization', 'Bearer $_testToken');
     final resp = await req.close();
     expect(resp.statusCode, 200);
@@ -93,7 +96,7 @@ void main() {
   test('OPTSP seed and reset endpoints work', () async {
     final client = HttpClient();
     // Seed
-    var req = await client.postUrl(Uri.parse('http://localhost:8080/v1/provider/seed'));
+    var req = await client.postUrl(Uri.parse(_baseUrl('/v1/provider/seed')));
     req.headers.contentType = ContentType.json;
     req.headers.add('authorization', 'Bearer $_testToken');
     req.write(jsonEncode({'flags': {'test-flag': 123}}));
@@ -101,7 +104,7 @@ void main() {
     expect(resp.statusCode, 200);
 
     // Reset
-    req = await client.postUrl(Uri.parse('http://localhost:8080/v1/provider/reset'));
+    req = await client.postUrl(Uri.parse(_baseUrl('/v1/provider/reset')));
     req.headers.add('authorization', 'Bearer $_testToken');
     resp = await req.close();
     expect(resp.statusCode, 200);
@@ -109,7 +112,7 @@ void main() {
 
   test('OREP returns 400 on invalid JSON', () async {
     final client = HttpClient();
-    final req = await client.postUrl(Uri.parse('http://localhost:8080/v1/flags/bool-flag/evaluate'));
+    final req = await client.postUrl(Uri.parse(_baseUrl('/v1/flags/bool-flag/evaluate')));
     req.headers.contentType = ContentType.json;
     req.headers.add('authorization', 'Bearer $_testToken');
     req.write('not a json');
