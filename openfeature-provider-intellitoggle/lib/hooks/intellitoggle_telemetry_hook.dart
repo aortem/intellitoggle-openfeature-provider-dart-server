@@ -148,7 +148,6 @@ class IntelliToggleTelemetryHook extends Hook {
     // END THE SPAN HERE (critical - must be last)
     Telemetry.endSpan(_span!);
     
-    // Cleanup
     _span = null;
     _startTime = null;
   }
