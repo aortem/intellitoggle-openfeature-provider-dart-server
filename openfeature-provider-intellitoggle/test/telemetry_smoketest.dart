@@ -49,6 +49,7 @@ void main() {
 
     // ✅ Assertions
     expect(value, true);
+<<<<<<< HEAD
     expect(Telemetry.metrics.counters['feature_flag.evaluation_count'], greaterThan(0));
     expect(Telemetry.metrics.counters['feature_flag.evaluation_success_count'], greaterThan(0));
     expect(Telemetry.metrics.latencyHistogram['test-flag'], isNotEmpty);
@@ -57,3 +58,8 @@ void main() {
     print('\n✅ All tests passed!');
   });
 }
+=======
+    expect(Telemetry.metrics.counters['evaluation.total'], greaterThan(0));
+  });
+}
+>>>>>>> 0a03ce4f10af37a12030b6886bc114a1e3aa7f12

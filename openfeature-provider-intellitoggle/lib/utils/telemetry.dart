@@ -1,16 +1,25 @@
 /// Internal Telemetry Utility for OpenFeature + OpenTelemetry compatibility.
+<<<<<<< HEAD
 /// 
 /// This implementation:
 /// - Contains NO external dependencies (as required by ticket)
 /// - Generates OTel-compliant telemetry signals
 /// - Uses bucketed histograms (not unbounded lists)
 /// - Supports span events per Appendix D
+=======
+/// NOTE: This contains *no external dependencies*, as required by the ticket.
+/// It generates OTel-compliant telemetry signals in a lightweight format.
+>>>>>>> 0a03ce4f10af37a12030b6886bc114a1e3aa7f12
 
 class Telemetry {
   static final _metrics = _TelemetryMetrics();
   static final _spans = <String, _TelemetrySpan>{};
 
+<<<<<<< HEAD
   /// Start a new span with OTel naming conventions
+=======
+  /// Start a new span.
+>>>>>>> 0a03ce4f10af37a12030b6886bc114a1e3aa7f12
   static _TelemetrySpan startSpan(
     String name, {
     Map<String, Object?> attributes = const {},
@@ -25,11 +34,16 @@ class Telemetry {
     return span;
   }
 
+<<<<<<< HEAD
   /// End an existing span
+=======
+  /// End an existing span.
+>>>>>>> 0a03ce4f10af37a12030b6886bc114a1e3aa7f12
   static void endSpan(_TelemetrySpan span, {Object? error}) {
     span.endTime = DateTime.now();
 
     if (error != null) {
+<<<<<<< HEAD
       span.attributes['error'] = true;
       span.attributes['error.message'] = error.toString();
     }
@@ -59,6 +73,22 @@ class Telemetry {
   // Debug mode for testing
   static bool _debugMode = false;
   static void enableDebugMode() => _debugMode = true;
+=======
+      span.attributes['error.code'] = error.toString();
+    }
+
+    // In a real OTEL exporter, this is where we would push external trace events.
+    // For now, we keep the span internally for debugging or tests.
+  }
+
+  /// Access metrics API.
+  static _TelemetryMetrics get metrics => _metrics;
+
+  /// Utility to record latency for compatibility with histogram metrics.
+  static void recordLatency(String flagKey, Duration latency) {
+    _metrics.recordLatency(flagKey, latency);
+  }
+>>>>>>> 0a03ce4f10af37a12030b6886bc114a1e3aa7f12
 }
 
 // ---------------------------------------------------------------------------
@@ -66,13 +96,20 @@ class Telemetry {
 // ---------------------------------------------------------------------------
 
 class _TelemetrySpan {
+<<<<<<< HEAD
   final String id = DateTime.now().microsecondsSinceEpoch.toString();
+=======
+  final String id = DateTime.now().millisecondsSinceEpoch.toString();
+>>>>>>> 0a03ce4f10af37a12030b6886bc114a1e3aa7f12
   final String name;
   final DateTime startTime;
   DateTime? endTime;
 
   final Map<String, Object?> attributes;
+<<<<<<< HEAD
   final List<_SpanEvent> events = [];
+=======
+>>>>>>> 0a03ce4f10af37a12030b6886bc114a1e3aa7f12
 
   _TelemetrySpan({
     required this.name,
@@ -80,11 +117,15 @@ class _TelemetrySpan {
     required this.attributes,
   });
 
+<<<<<<< HEAD
   /// Set or update a span attribute
+=======
+>>>>>>> 0a03ce4f10af37a12030b6886bc114a1e3aa7f12
   void setAttribute(String key, Object? value) {
     attributes[key] = value;
   }
 
+<<<<<<< HEAD
   /// Add a span event (required by Appendix D for errors)
   void addEvent(String name, {Map<String, Object?>? attributes}) {
     events.add(_SpanEvent(
@@ -121,20 +162,36 @@ class _SpanEvent {
 
 // ---------------------------------------------------------------------------
 // INTERNAL METRICS MODEL (COUNTERS + BUCKETED HISTOGRAM)
+=======
+  @override
+  String toString() {
+    return 'Span($name) {start: $startTime, end: $endTime, attributes: $attributes}';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// INTERNAL METRICS MODEL (COUNTERS + HISTOGRAM)
+>>>>>>> 0a03ce4f10af37a12030b6886bc114a1e3aa7f12
 // ---------------------------------------------------------------------------
 
 class _TelemetryMetrics {
   final Map<String, int> counters = {};
+<<<<<<< HEAD
   
   // Bucketed histogram: flagKey -> {bucket_ms: count}
   // This prevents unbounded memory growth
   final Map<String, Map<int, int>> latencyHistogram = {};
 
   /// Increment a counter metric
+=======
+  final Map<String, List<Duration>> latencyHistogram = {};
+
+>>>>>>> 0a03ce4f10af37a12030b6886bc114a1e3aa7f12
   void increment(String name) {
     counters[name] = (counters[name] ?? 0) + 1;
   }
 
+<<<<<<< HEAD
   /// Record latency in bucketed histogram
   /// Buckets (ms): [0-1, 2-5, 6-10, 11-50, 51-200, 201-1000, 1001-5000, >5000]
   void recordLatency(String flagKey, Duration latency) {
@@ -202,3 +259,16 @@ class _TelemetryMetrics {
 
 /// Public typedef for span type
 typedef TelemetrySpan = _TelemetrySpan;
+=======
+  void recordLatency(String flagKey, Duration latency) {
+    latencyHistogram.putIfAbsent(flagKey, () => []);
+    latencyHistogram[flagKey]!.add(latency);
+  }
+
+  @override
+  String toString() {
+    return 'Metrics { counters: $counters, latency: $latencyHistogram }';
+  }
+}
+typedef TelemetrySpan = _TelemetrySpan;
+>>>>>>> 0a03ce4f10af37a12030b6886bc114a1e3aa7f12

@@ -1,0 +1,18 @@
+name: intellitoggle_demo
+description: IntelliToggle Server-Side SDK Demo
+version: 0.0.1
+# repository: https://github.com/my_org/my_repo
+
+environment:
+  sdk: ^3.9.2
+
+# Add regular dependencies here.
+dependencies:
+  openfeature_dart_server_sdk: 0.0.13
+  openfeature_provider_intellitoggle: ^0.0.5
+  http: ^1.1.0
+  dart_jsonwebtoken: ^2.12.2
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6

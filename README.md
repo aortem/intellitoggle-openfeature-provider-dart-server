@@ -573,7 +573,7 @@ We welcome contributions! See [`CONTRIBUTING.md`](https://github.com/intellitogg
 
 ## Learn More
 
-* **Website:** [https://intellitoggle.com](https://intellitoggle.com)
-* **Docs & CLI:** [https://sdks.aortem.io/intellitoggle](https://sdks.aortem.io/intellitoggle/)
-* **API Reference:** [https://api.intellitoggle.com/docs](https://api.intellitoggle.com/docs)
+* **Website:** [https://www.intellitoggle.com](https://www.intellitoggle.com)
+* **Docs & CLI:** [https://docs.intellitoggle.com/](https://docs.intellitoggle.com/)
+* **API Reference:** [https://docs.intellitoggle.com/](https://docs.intellitoggle.com/)
 * **GitHub:** [https://github.com/aortem/intellitoggle-openfeature-provider-dart-server](https://github.com/aortem/intellitoggle-openfeature-provider-dart-server)
