@@ -9,8 +9,6 @@ dependencies:
   # Path dependency to the actual provider package
   openfeature_provider_intellitoggle:
     path: openfeature-provider-intellitoggle
-  # Ensure modern OpenFeature SDK (CI-aligned)
-  openfeature_dart_server_sdk: ^0.0.13
   path: ^1.9.1
 
 dev_dependencies:

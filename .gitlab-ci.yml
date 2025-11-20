@@ -19,7 +19,7 @@ gherkin_e2e:
     - dart --version
     - git submodule update --init --recursive
     - dart pub get
-    - dart test -r expanded --file-reporter=json:test-results.json test/gherkin/gherkin_suite_test.dart
+    - dart test -r expanded --concurrency=1 --file-reporter=json:test-results.json test/gherkin/gherkin_suite_test.dart
     - dart pub global activate junitreport
     - dart pub global run junitreport:tojunit --input test-results.json --output test-results.xml
   artifacts:
@@ -27,4 +27,5 @@ gherkin_e2e:
     reports:
       junit: test-results.xml
     paths:
+      - test-results.xml
       - test/gherkin/_tmp/
