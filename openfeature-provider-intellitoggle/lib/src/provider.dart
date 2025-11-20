@@ -234,7 +234,7 @@ Future<FlagEvaluationResult<T>> _evaluateFlag<T>(
     }
 
     // Telemetry: success count + latency
-    Telemetry.metrics.increment('provider.evaluation.success');
+    Telemetry.metrics.increment('feature_flag.evaluation_success_count');
     Telemetry.recordLatency(
       flagKey,
       DateTime.now().difference(start),
@@ -265,7 +265,7 @@ Future<FlagEvaluationResult<T>> _evaluateFlag<T>(
 
   } catch (error) {
     // Telemetry: error count + latency
-    Telemetry.metrics.increment('provider.evaluation.error');
+    Telemetry.metrics.increment('feature_flag.evaluation_error_count');
     Telemetry.recordLatency(
       flagKey,
       DateTime.now().difference(start),
