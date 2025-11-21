@@ -44,7 +44,8 @@ class FlagService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return Flag.fromJson(data['flag']);
+        // GET returns: {success: true, data: {flag: {...}}}
+        return Flag.fromJson(data['data']['flag']);
       } else if (response.statusCode == 404) {
         return null;
       } else {
@@ -75,7 +76,7 @@ class FlagService {
       'type': 'boolean',
       'enabled': true,
       'defaultValue': defaultValue,
-      'variations': [
+      'flag_variations': [
         {'id': 'off', 'value': false, 'name': 'Off'},
         {'id': 'on', 'value': true, 'name': 'On'},
       ],
@@ -93,7 +94,8 @@ class FlagService {
 
     if (response.statusCode == 201 || response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return Flag.fromJson(data['data']['flag']);
+      // FIX: Backend returns data directly, not nested in 'flag'
+      return Flag.fromJson(data['data']);
     } else {
       throw Exception(
         'Failed to create flag: ${response.statusCode} - ${response.body}',
@@ -129,7 +131,7 @@ class FlagService {
       'type': 'string',
       'enabled': true,
       'defaultValue': defaultValue,
-      'variations': variationObjects,
+      'flag_variations': variationObjects,
       'tags': tags ?? ['demo'],
       'environment': 'production',
     });
@@ -144,7 +146,8 @@ class FlagService {
 
     if (response.statusCode == 201 || response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return Flag.fromJson(data['data']['flag']);
+      // FIX: Backend returns data directly, not nested in 'flag'
+      return Flag.fromJson(data['data']);
     } else {
       throw Exception(
         'Failed to create string flag: ${response.statusCode} - ${response.body}',
