@@ -26,6 +26,10 @@ export 'src/utils.dart'
 // Re-export OpenFeature types
 export 'package:openfeature_dart_server_sdk/open_feature_api.dart';
 export 'package:openfeature_dart_server_sdk/evaluation_context.dart';
+<<<<<<< HEAD
 export 'hooks/intellitoggle_telemetry_hook.dart';
 // export 'package:openfeature_dart_server_sdk/feature_provider.dart';
+=======
+// export 'package:openfeature_dart_server_sdk/feature_provider.dart';
+>>>>>>> f9e407bbf866b2f6f5f5caa892b5d5bef4720e9f
 export 'package:openfeature_dart_server_sdk/client.dart';
