@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'package:openfeature_dart_server_sdk/client.dart';
 import 'package:openfeature_dart_server_sdk/evaluation_context.dart';
+import 'package:openfeature_dart_server_sdk/hooks.dart';
+import '../hooks/intellitoggle_telemetry_hook.dart';
+
+
 
 /// Convenience wrapper over OpenFeature client with IntelliToggle-specific methods
 ///
@@ -24,7 +28,10 @@ class IntelliToggleClient {
   /// Creates a new IntelliToggle client wrapper
   ///
   /// [_client] - The OpenFeature FeatureClient to wrap
-  IntelliToggleClient(this._client);
+  IntelliToggleClient(this._client) {
+    // Register OpenTelemetry hook globally
+    // _hookManager.addHook(IntelliToggleTelemetryHook());
+  }
 
   /// Evaluate a boolean flag with enhanced context processing
   ///

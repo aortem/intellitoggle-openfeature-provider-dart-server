@@ -14,10 +14,6 @@ dependencies:
 
 dev_dependencies:
   ds_tools_testing: ^0.1.0
-  test: ^1.25.2
   gherkin: ^3.1.0
-
-dependency_overrides:
-  openfeature_dart_server_sdk: ^0.0.13
 
 
