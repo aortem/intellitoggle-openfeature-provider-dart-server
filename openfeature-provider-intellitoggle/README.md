@@ -96,6 +96,55 @@ Configure using environment variables:
 | `OREP_HOST`       | `0.0.0.0`        |
 | `OREP_AUTH_TOKEN` | `changeme-token` |
 
+### OFREP Client (Remote Evaluation)
+
+The provider can call an OFREP-compliant endpoint for remote flag evaluation.
+
+- Enable via options or environment variables.
+- Maps OFREP responses to OpenFeature `ProviderEvaluation` including `value`, `variant`, `reason`, `errorCode`, and `flagMetadata`.
+- Supports retries, timeouts, and optional in-memory cache keyed by `(flagKey + context)`.
+
+Environment variables:
+
+```
+OFREP_ENABLED=true
+OFREP_BASE_URL=https://ofrep.example.com
+OFREP_AUTH_TOKEN=your_bearer_token
+OFREP_TIMEOUT_MS=5000
+OFREP_MAX_RETRIES=3
+OFREP_CACHE_TTL_MS=60000
+```
+
+Code example:
+
+```dart
+final provider = IntelliToggleProvider(
+  sdkKey: 'YOUR_TOKEN', // used if OFREP_AUTH_TOKEN not set
+  options: IntelliToggleOptions(
+    useOfrep: true,
+    ofrepBaseUri: Uri.parse('https://ofrep.example.com'),
+    cacheTtl: const Duration(minutes: 1),
+    maxRetries: 3,
+    timeout: const Duration(seconds: 5),
+  ),
+);
+await OpenFeatureAPI().setProvider(provider);
+
+final client = IntelliToggleClient(
+  FeatureClient(
+    metadata: ClientMetadata(name: 'service-x'),
+    hookManager: HookManager(),
+  ),
+);
+
+final result = await client.getBooleanValue(
+  'my-flag',
+  false,
+  targetingKey: 'user-123',
+  evaluationContext: {'region': 'us-east-1'},
+);
+```
+
 ---
 
 ## 📚 Resources

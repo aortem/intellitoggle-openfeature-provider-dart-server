@@ -553,6 +553,28 @@ IntelliToggleOptions.development()
 
 ### OREP Endpoints
 
+#### Using the provider as an OFREP client
+
+Configure the provider to evaluate flags against an OFREP endpoint and expose results via OpenFeature APIs.
+
+- Config via code or env vars: `OFREP_ENABLED`, `OFREP_BASE_URL`, `OFREP_AUTH_TOKEN`, `OFREP_TIMEOUT_MS`, `OFREP_MAX_RETRIES`, `OFREP_CACHE_TTL_MS`.
+- Supports core types: boolean, string, integer, double, object.
+- Returns default on network errors with reason `ERROR` and appropriate error code.
+
+Example:
+
+```dart
+final provider = IntelliToggleProvider(
+  sdkKey: 'YOUR_TOKEN',
+  options: IntelliToggleOptions(
+    useOfrep: true,
+    ofrepBaseUri: Uri.parse('http://localhost:8080'),
+    cacheTtl: const Duration(seconds: 30),
+  ),
+);
+await OpenFeatureAPI().setProvider(provider);
+```
+
 - `POST /v1/flags/{flagKey}/evaluate` - Evaluate flag
 - `GET /v1/provider/metadata` - Provider info
 
