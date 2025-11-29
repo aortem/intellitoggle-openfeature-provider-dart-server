@@ -18,7 +18,8 @@ void main() {
       unawaited(() async {
         await for (final req in server) {
           try {
-            if (req.method == 'GET' && req.uri.path == '/v1/provider/metadata') {
+            if (req.method == 'GET' &&
+                req.uri.path == '/v1/provider/metadata') {
               final payload = '{"name":"mock"}';
               req.response.headers.contentType = ContentType.json;
               req.response.headers.contentLength = utf8.encode(payload).length;
@@ -26,7 +27,8 @@ void main() {
               await req.response.close();
               continue;
             }
-            if (req.method == 'POST' && req.uri.path == '/v1/flags/my-bool/evaluate') {
+            if (req.method == 'POST' &&
+                req.uri.path == '/v1/flags/my-bool/evaluate') {
               final body = await utf8.decoder.bind(req).join();
               final json = jsonDecode(body) as Map<String, dynamic>;
               expect(json['type'], 'boolean');
@@ -47,7 +49,9 @@ void main() {
             req.response.statusCode = 404;
             await req.response.close();
           } catch (_) {
-            try { await req.response.close(); } catch (_) {}
+            try {
+              await req.response.close();
+            } catch (_) {}
           }
         }
       }());
@@ -62,6 +66,9 @@ void main() {
       );
       final provider = IntelliToggleProvider(
         sdkKey: 'token',
+        clientId: "client_",
+        clientSecret: "cs_",
+        tenantId: "tenant_",
         options: options,
       );
       await provider.initialize({});
@@ -93,15 +100,16 @@ void main() {
       );
       final provider = IntelliToggleProvider(
         sdkKey: 'token',
+        clientId: "client_",
+        clientSecret: "cs_",
+        tenantId: "tenant_",
         options: options,
         httpClient: mock,
       );
-      try { await provider.initialize({}); } catch (_) {}
-      final result = await provider.getBooleanFlag(
-        'flag',
-        false,
-        context: {},
-      );
+      try {
+        await provider.initialize({});
+      } catch (_) {}
+      final result = await provider.getBooleanFlag('flag', false, context: {});
       expect(result.value, false);
       expect(result.reason, 'ERROR');
       expect(result.errorCode.toString(), contains('GENERAL'));
@@ -114,7 +122,8 @@ void main() {
       unawaited(() async {
         await for (final req in server) {
           try {
-            if (req.method == 'GET' && req.uri.path == '/v1/provider/metadata') {
+            if (req.method == 'GET' &&
+                req.uri.path == '/v1/provider/metadata') {
               final payload = '{"name":"mock"}';
               req.response.headers.contentType = ContentType.json;
               req.response.headers.contentLength = utf8.encode(payload).length;
@@ -122,7 +131,8 @@ void main() {
               await req.response.close();
               continue;
             }
-            if (req.method == 'POST' && req.uri.path == '/v1/flags/num-flag/evaluate') {
+            if (req.method == 'POST' &&
+                req.uri.path == '/v1/flags/num-flag/evaluate') {
               attempts++;
               if (attempts == 1) {
                 req.response.statusCode = 500;
@@ -130,7 +140,9 @@ void main() {
               } else {
                 final payload = jsonEncode({'value': 123, 'reason': 'STATIC'});
                 req.response.headers.contentType = ContentType.json;
-                req.response.headers.contentLength = utf8.encode(payload).length;
+                req.response.headers.contentLength = utf8
+                    .encode(payload)
+                    .length;
                 req.response.write(payload);
                 await req.response.close();
               }
@@ -139,7 +151,9 @@ void main() {
             req.response.statusCode = 404;
             await req.response.close();
           } catch (_) {
-            try { await req.response.close(); } catch (_) {}
+            try {
+              await req.response.close();
+            } catch (_) {}
           }
         }
       }());
@@ -155,6 +169,9 @@ void main() {
       );
       final provider = IntelliToggleProvider(
         sdkKey: 'token',
+        clientId: "client_",
+        clientSecret: "cs_",
+        tenantId: "tenant_",
         options: options,
       );
       await provider.initialize({});
@@ -168,65 +185,78 @@ void main() {
       await server.close(force: true);
     });
 
-    test('flagEvaluated event includes variant and metadata when provided', () async {
-      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-      final base = Uri.parse('http://127.0.0.1:${server.port}');
-      unawaited(() async {
-        await for (final req in server) {
-          if (req.method == 'GET' && req.uri.path == '/v1/provider/metadata') {
-            final payload = '{"name":"mock"}';
-            req.response.headers.contentType = ContentType.json;
-            req.response.headers.contentLength = utf8.encode(payload).length;
-            req.response.write(payload);
+    test(
+      'flagEvaluated event includes variant and metadata when provided',
+      () async {
+        final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+        final base = Uri.parse('http://127.0.0.1:${server.port}');
+        unawaited(() async {
+          await for (final req in server) {
+            if (req.method == 'GET' &&
+                req.uri.path == '/v1/provider/metadata') {
+              final payload = '{"name":"mock"}';
+              req.response.headers.contentType = ContentType.json;
+              req.response.headers.contentLength = utf8.encode(payload).length;
+              req.response.write(payload);
+              await req.response.close();
+              continue;
+            }
+            if (req.method == 'POST' &&
+                req.uri.path == '/v1/flags/event-flag/evaluate') {
+              final payload = jsonEncode({
+                'value': true,
+                'reason': 'STATIC',
+                'variant': 'beta',
+                'flagMetadata': {'source': 'ut'},
+              });
+              req.response.headers.contentType = ContentType.json;
+              req.response.headers.contentLength = utf8.encode(payload).length;
+              req.response.write(payload);
+              await req.response.close();
+              continue;
+            }
+            req.response.statusCode = 404;
             await req.response.close();
-            continue;
           }
-          if (req.method == 'POST' && req.uri.path == '/v1/flags/event-flag/evaluate') {
-            final payload = jsonEncode({
-              'value': true,
-              'reason': 'STATIC',
-              'variant': 'beta',
-              'flagMetadata': {'source': 'ut'},
-            });
-            req.response.headers.contentType = ContentType.json;
-            req.response.headers.contentLength = utf8.encode(payload).length;
-            req.response.write(payload);
-            await req.response.close();
-            continue;
-          }
-          req.response.statusCode = 404;
-          await req.response.close();
-        }
-      }());
+        }());
 
-      final options = IntelliToggleOptions(
-        useOfrep: true,
-        ofrepBaseUri: base,
-        enableLogging: false,
-        cacheTtl: Duration.zero,
-      );
-      final provider = IntelliToggleProvider(
-        sdkKey: 'token',
-        options: options,
-      );
-      final evCompleter = Completer<IntelliToggleEvent>();
-      final sub = provider.events.listen((e) {
-        if (e.type == IntelliToggleEventType.flagEvaluated && !evCompleter.isCompleted) {
-          evCompleter.complete(e);
+        final options = IntelliToggleOptions(
+          useOfrep: true,
+          ofrepBaseUri: base,
+          enableLogging: false,
+          cacheTtl: Duration.zero,
+        );
+        final provider = IntelliToggleProvider(
+          sdkKey: 'token',
+          clientId: "client_",
+          clientSecret: "cs_",
+          tenantId: "tenant_",
+          options: options,
+        );
+        final evCompleter = Completer<IntelliToggleEvent>();
+        final sub = provider.events.listen((e) {
+          if (e.type == IntelliToggleEventType.flagEvaluated &&
+              !evCompleter.isCompleted) {
+            evCompleter.complete(e);
+          }
+        });
+        await provider.initialize({});
+        await provider.getBooleanFlag(
+          'event-flag',
+          false,
+          context: {'targetingKey': 'u'},
+        );
+        // Await the flagEvaluated event
+        final ev = await evCompleter.future.timeout(const Duration(seconds: 2));
+        expect(ev.data?['variant'], anyOf('beta', isNull));
+        final ctx = ev.data?['context'] as Map<String, dynamic>?;
+        expect(ctx, isNotNull);
+        if (ctx != null) {
+          expect(ctx.containsKey('__flagMetadata'), true);
         }
-      });
-      await provider.initialize({});
-      await provider.getBooleanFlag('event-flag', false, context: {'targetingKey': 'u'});
-      // Await the flagEvaluated event
-      final ev = await evCompleter.future.timeout(const Duration(seconds: 2));
-      expect(ev.data?['variant'], anyOf('beta', isNull));
-      final ctx = ev.data?['context'] as Map<String, dynamic>?;
-      expect(ctx, isNotNull);
-      if (ctx != null) {
-        expect(ctx.containsKey('__flagMetadata'), true);
-      }
-      await server.close(force: true);
-      await sub.cancel();
-    });
+        await server.close(force: true);
+        await sub.cancel();
+      },
+    );
   });
 }

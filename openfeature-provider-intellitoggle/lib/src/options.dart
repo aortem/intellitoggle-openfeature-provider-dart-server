@@ -66,7 +66,7 @@ class IntelliToggleOptions {
   /// Base URI for OFREP endpoint when [useOfrep] is true
   final Uri? ofrepBaseUri;
 
-  /// Optional OFREP-specific auth token; falls back to provider sdkKey
+  /// Optional OFREP-specific auth token; falls back to provider credentials
   final String? ofrepAuthToken;
 
   /// Creates a new IntelliToggleOptions instance
@@ -190,7 +190,7 @@ class IntelliToggleOptions {
   /// Supported keys:
   /// - OFREP_ENABLED: 'true' to enable OFREP
   /// - OFREP_BASE_URL: e.g. https://ofrep.example.com
-  /// - OFREP_AUTH_TOKEN: bearer token (if different from sdkKey)
+  /// - OFREP_AUTH_TOKEN: bearer token (if different from credentials)
   /// - OFREP_TIMEOUT_MS: request timeout in ms
   /// - OFREP_MAX_RETRIES: integer
   /// - OFREP_CACHE_TTL_MS: integer
@@ -223,6 +223,7 @@ class IntelliToggleOptions {
     }
     return null;
   }
+
   void setCachedFlag(String cacheKey, dynamic value, Duration ttl) {
     if (ttl > Duration.zero) {
       _flagCache[cacheKey] = {
@@ -231,6 +232,7 @@ class IntelliToggleOptions {
       };
     }
   }
+
   void clearFlagCache() {
     _flagCache.clear();
   }
