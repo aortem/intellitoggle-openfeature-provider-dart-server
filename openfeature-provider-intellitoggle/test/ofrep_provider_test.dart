@@ -65,7 +65,6 @@ void main() {
         maxRetries: 1,
       );
       final provider = IntelliToggleProvider(
-        sdkKey: 'token',
         clientId: "client_",
         clientSecret: "cs_",
         tenantId: "tenant_",
@@ -99,7 +98,6 @@ void main() {
         cacheTtl: Duration.zero,
       );
       final provider = IntelliToggleProvider(
-        sdkKey: 'token',
         clientId: "client_",
         clientSecret: "cs_",
         tenantId: "tenant_",
@@ -168,7 +166,6 @@ void main() {
         timeout: const Duration(seconds: 2),
       );
       final provider = IntelliToggleProvider(
-        sdkKey: 'token',
         clientId: "client_",
         clientSecret: "cs_",
         tenantId: "tenant_",
@@ -227,7 +224,6 @@ void main() {
           cacheTtl: Duration.zero,
         );
         final provider = IntelliToggleProvider(
-          sdkKey: 'token',
           clientId: "client_",
           clientSecret: "cs_",
           tenantId: "tenant_",

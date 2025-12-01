@@ -6,14 +6,13 @@ void main() async {
   print('Starting IntelliToggle provider test with OAuth2...\n');
 
   final provider = IntelliToggleProvider(
-    baseUrl: "https://api.intellitoggle.com",
-    clientId: "client_",
-    clientSecret: "cs_",
-    tenantId: "tenant_",
+    clientId: "client_id",
+    clientSecret: "cs_secret",
+    tenantId: "tenant_id",
     options: IntelliToggleOptions(
       // baseUri: Uri.parse("https://api.intellitoggle.com"),
       // timeout: const Duration(seconds: 10),
-      enableLogging: true,
+      // enableLogging: true,
     ),
   );
 
@@ -42,7 +41,7 @@ void main() async {
     false,
   );
 
-  print(newFeatureEnabled);
+  print('Flag value: ${newFeatureEnabled}');
 
   await provider.shutdown();
   print('✓ Test completed successfully!');

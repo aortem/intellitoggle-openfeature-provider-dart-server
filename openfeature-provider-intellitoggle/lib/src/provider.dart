@@ -9,7 +9,6 @@ import 'events.dart';
 
 /// New IntelliToggle provider implementation with corrected API endpoints
 class IntelliToggleProvider implements FeatureProvider {
-  String? _sdkKey; // Not required
   final String _clientId;
   final String _clientSecret;
   final String _tenantId;
@@ -27,8 +26,6 @@ class IntelliToggleProvider implements FeatureProvider {
 
   /// Creates a new IntelliToggle provider instance with corrected endpoints
   IntelliToggleProvider({
-    String? sdkKey,
-    String? baseUrl,
     required String clientId,
     required String clientSecret,
     required String tenantId,
@@ -37,11 +34,7 @@ class IntelliToggleProvider implements FeatureProvider {
   }) : _clientId = clientId,
        _clientSecret = clientSecret,
        _tenantId = tenantId,
-       _options =
-           options ??
-           IntelliToggleOptions(
-             baseUri: Uri.parse(baseUrl ?? 'https://api.intellitoggle.com'),
-           ),
+       _options = options ?? IntelliToggleOptions(),
        _httpClient = httpClient ?? http.Client() {
     _utils = IntelliToggleUtils(
       _httpClient,
@@ -56,7 +49,7 @@ class IntelliToggleProvider implements FeatureProvider {
 
   @override
   ProviderMetadata get metadata => ProviderMetadata(
-    name: 'IntelliToggle-New',
+    name: 'IntelliToggle',
     version: '1.0.0',
     attributes: const {'platform': 'dart', 'endpoint-version': 'corrected'},
   );
@@ -85,11 +78,6 @@ class IntelliToggleProvider implements FeatureProvider {
 
       if (_options.enableLogging) {
         print('[IntelliToggle] Provider initialized successfully');
-      }
-
-      // Start polling for configuration changes if enabled
-      if (_options.enablePolling) {
-        _startPolling();
       }
 
       _state = ProviderState.READY;
@@ -272,7 +260,7 @@ class IntelliToggleProvider implements FeatureProvider {
         errorCode: errorCode,
         errorMessage: _sanitizeError(response['errorMessage']),
         evaluatedAt: now,
-        evaluatorId: 'IntelliToggle-New',
+        evaluatorId: 'IntelliToggle',
       );
 
       _eventEmitter.emit(
@@ -294,7 +282,7 @@ class IntelliToggleProvider implements FeatureProvider {
         errorCode: ErrorCode.FLAG_NOT_FOUND,
         errorMessage: _sanitizeError(error),
         evaluatedAt: DateTime.now(),
-        evaluatorId: 'IntelliToggle-New',
+        evaluatorId: 'IntelliToggle',
       );
     } on TypeMismatchException catch (error) {
       return FlagEvaluationResult<T>(
@@ -304,7 +292,7 @@ class IntelliToggleProvider implements FeatureProvider {
         errorCode: ErrorCode.TYPE_MISMATCH,
         errorMessage: _sanitizeError(error),
         evaluatedAt: DateTime.now(),
-        evaluatorId: 'IntelliToggle-New',
+        evaluatorId: 'IntelliToggle',
       );
     } catch (error) {
       // Telemetry: error count + latency
@@ -318,17 +306,17 @@ class IntelliToggleProvider implements FeatureProvider {
         errorCode: ErrorCode.GENERAL,
         errorMessage: _sanitizeError(error),
         evaluatedAt: DateTime.now(),
-        evaluatorId: 'IntelliToggle-New',
+        evaluatorId: 'IntelliToggle',
       );
     }
   }
 
   /// Test connection to IntelliToggle API health endpoint
-  Future<void> _testConnection() async {
+  Future<dynamic> _testConnection() async {
     final response = await _httpClient
         .get(
           _options.baseUri.resolve('/health'),
-          headers: _utils.buildHeadersWithSDKKey(_clientSecret),
+          headers: await _utils.buildHeaders(),
         )
         .timeout(_options.timeout);
 
@@ -336,26 +324,12 @@ class IntelliToggleProvider implements FeatureProvider {
       throw Exception(
         'Failed to connect to IntelliToggle API: ${response.statusCode}',
       );
-    }
-  }
-
-  /// Polling is not implemented since we don't have a bulk fetch endpoint
-  /// Each flag evaluation is always fresh from the API
-  /// Start polling for configuration changes using ETag
-  void _startPolling() {
-    _pollingTimer = Timer.periodic(_options.pollingInterval, (_) async {
-      try {
-        // Check if configuration has changed
-        final hasChanges = await _utils.checkForChanges(_clientSecret);
-        if (hasChanges) {
-          // Emit configuration change event
-          _eventEmitter.emit(IntelliToggleEvent.configurationChanged());
-        }
-      } catch (error) {
-        // Log polling errors but don't crash
-        _eventEmitter.emit(IntelliToggleEvent.error(error.toString()));
+    } else {
+      if (_options.enableLogging) {
+        print('[IntelliToggle] Test Connection to route /health successful');
       }
-    });
+      return response;
+    }
   }
 
   /// Get event stream for listening to provider lifecycle events

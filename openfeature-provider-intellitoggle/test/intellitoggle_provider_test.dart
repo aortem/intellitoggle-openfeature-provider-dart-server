@@ -6,13 +6,13 @@ void main() async {
     print('Starting IntelliToggle provider test with OAuth2...\n');
 
     final provider = IntelliToggleProvider(
-      clientId: "client_",
-      clientSecret: "cs_",
-      tenantId: "tenant_",
+      clientId: "client_id",
+      clientSecret: "cs_secret",
+      tenantId: "tenant_id",
       options: IntelliToggleOptions(
-        baseUri: Uri.parse("https://dev-api.intellitoggle.com"),
+        // baseUri: Uri.parse("https://api.intellitoggle.com"),
         // timeout: const Duration(seconds: 10),
-        enableLogging: true,
+        // enableLogging: true,
       ),
     );
 
@@ -24,18 +24,16 @@ void main() async {
     api.setProvider(provider);
 
     // Test 1a: Evaluate a boolean flag
-    print('Test 1a: Evaluating boolean flag "new-ui-enabled"...');
+    print('Test 1a: Evaluating boolean flag "new-dashboard-ui"...');
     try {
-      final result = await provider.getBooleanFlag('new-ui-enabled', false);
+      // result.flagKey, result.value, result.evaluatedAt, result.reason
+      final result = await provider.getBooleanFlag('new-dashboard-ui', false);
 
-      print('✓ Flag evaluation result:');
-      print('  Flag Key: ${result.flagKey}');
-      print('  Value: ${result.value}');
-      print('  Reason: ${result.reason}');
-      print('  Variant: ${result.variant}');
       if (result.errorCode != null) {
-        print('  Error Code: ${result.errorCode}');
-        print('  Error Message: ${result.errorMessage}');
+        print('✗ Error Code: ${result.errorCode}');
+        print('✗ Error Message: ${result.errorMessage}');
+      } else {
+        print('Flag value: ${result.value}'); // Flag evaluated value
       }
       print('');
     } catch (e) {
@@ -44,6 +42,7 @@ void main() async {
 
     print('Test 1b: Evaluating boolean flag "test-flag"...');
     try {
+      // result.flagKey, result.value, result.evaluatedAt, result.reason
       final result = await provider.getBooleanFlag(
         'test-flag',
         false,
@@ -55,14 +54,11 @@ void main() async {
         },
       );
 
-      print('✓ Flag evaluation result:');
-      print('  Flag Key: ${result.flagKey}');
-      print('  Value: ${result.value}');
-      print('  Reason: ${result.reason}');
-      print('  Variant: ${result.variant}');
       if (result.errorCode != null) {
-        print('  Error Code: ${result.errorCode}');
-        print('  Error Message: ${result.errorMessage}');
+        print('✗ Error Code: ${result.errorCode}');
+        print('✗ Error Message: ${result.errorMessage}');
+      } else {
+        print('Flag value: ${result.value}'); // Flag evaluated value
       }
       print('');
     } catch (e) {
@@ -72,16 +68,19 @@ void main() async {
     // Test 2: Evaluate a non-existent flag (should return default)
     print('Test 2: Evaluating non-existent flag "missing-flag"...');
     try {
+      // result.flagKey, result.value, result.evaluatedAt, result.reason
       final result = await provider.getBooleanFlag(
         'missing-flag',
         true, // default value
         context: {'targetingKey': 'user-456'},
       );
 
-      print('✓ Non-existent flag handled gracefully:');
-      print('  Value: ${result.value} (default)');
-      print('  Reason: ${result.reason}');
-      print('  Error Code: ${result.errorCode}');
+      if (result.errorCode != null) {
+        print('✗ Error Code: ${result.errorCode}');
+        print('✗ Error Message: ${result.errorMessage}');
+      } else {
+        print('Flag value: ${result.value}'); // Flag evaluated value
+      }
       print('');
     } catch (e) {
       print('✗ Unexpected error: $e\n');
@@ -90,15 +89,19 @@ void main() async {
     // Test 3: Evaluate a string flag
     print('Test 3: Evaluating string flag "theme-config"...');
     try {
+      // result.flagKey, result.value, result.evaluatedAt, result.reason
       final result = await provider.getStringFlag(
         'theme-config',
         'light',
         context: {'targetingKey': 'user-789', 'kind': 'user'},
       );
 
-      print('✓ String flag evaluation:');
-      print('  Value: ${result.value}');
-      print('  Reason: ${result.reason}');
+      if (result.errorCode != null) {
+        print('✗ Error Code: ${result.errorCode}');
+        print('✗ Error Message: ${result.errorMessage}');
+      } else {
+        print('Flag value: ${result.value}'); // Flag evaluated value
+      }
       print('');
     } catch (e) {
       print('✗ Flag evaluation failed: $e\n');
@@ -106,14 +109,15 @@ void main() async {
 
     print('Test: Evaluating string flag "welcome-message"...');
     try {
-      final result = await provider.getStringFlag(
-        'welcome-message',
-        'Message'
-      );
+      // result.flagKey, result.value, result.evaluatedAt, result.reason
+      final result = await provider.getStringFlag('welcome-message', 'Message');
 
-      print('✓ String flag evaluation:');
-      print('  Value: ${result.value}');
-      print('  Reason: ${result.reason}');
+      if (result.errorCode != null) {
+        print('✗ Error Code: ${result.errorCode}');
+        print('✗ Error Message: ${result.errorMessage}');
+      } else {
+        print('Flag value: ${result.value}'); // Flag evaluated value
+      }
       print('');
     } catch (e) {
       print('✗ Flag evaluation failed: $e\n');
@@ -128,15 +132,9 @@ void main() async {
     if (error.toString().contains('401')) {
       print('\nOAuth2 Authentication Failed:');
       print('1. Check your client_id, client_secret, and tenant_id');
-      print('2. Verify the OAuth2 token endpoint is accessible');
       print(
-        '3. Check if your credentials have the "flags:read flags:evaluate" scope',
+        '2. Check if your credentials have the "flags:read flags:evaluate" scope',
       );
-    } else if (error.toString().contains('404')) {
-      print('\nEndpoint Not Found:');
-      print('1. Verify the flag key exists in your IntelliToggle dashboard');
-      print('2. Check the API base URL is correct');
-      print('3. Ensure the evaluate endpoint format is correct');
     }
   }
 }

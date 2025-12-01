@@ -2,14 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:http/http.dart' as http;
-
 import 'options.dart';
 
 /// HTTP utilities and helper functions for IntelliToggle API communication
 class IntelliToggleUtils {
   final http.Client _httpClient;
   final IntelliToggleOptions _options;
-  String? _lastEtag;
   String? _accessToken;
   DateTime? _tokenExpiry;
 
@@ -100,7 +98,7 @@ class IntelliToggleUtils {
       return _accessToken!;
     } else {
       throw AuthenticationException(
-        'OAuth2 failed: ${response.statusCode} - ${response.body}',
+        'OAuth2 failed: ${response.statusCode} - ${response.body}\n',
       );
     }
   }
@@ -120,18 +118,6 @@ class IntelliToggleUtils {
     };
   }
 
-  Map<String, String> buildHeadersWithSDKKey(String sdkKey) {
-    // Never log or expose the SDK key
-    return {
-      'Authorization': 'Bearer $sdkKey',
-      'Content-Type': 'application/json',
-      'User-Agent': _options.userAgent,
-      'Accept': 'application/json',
-      'X-SDK-Version': '1.0.0',
-      'X-SDK-Language': 'dart',
-      ..._options.headers,
-    };
-  }
 
   /// Evaluate a flag via IntelliToggle API
   ///
@@ -241,7 +227,6 @@ class IntelliToggleUtils {
   /// Request: { defaultValue, type, context }
   /// Response: { value, reason?, variant?, flagMetadata? }
   Future<Map<String, dynamic>> evaluateFlagOfrep(
-    String sdkKey,
     String flagKey,
     Map<String, dynamic> context,
     String valueType,
@@ -274,16 +259,12 @@ class IntelliToggleUtils {
     const int maxDelayMs = 30000;
     while (attempts < _options.maxRetries) {
       try {
+        final headers = await buildHeaders();
+        
         final response = await _makeRequest(
           'POST',
           '/v1/flags/$flagKey/evaluate',
-          headers: {
-            'Authorization': 'Bearer ${_options.ofrepAuthToken ?? sdkKey}',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': _options.userAgent,
-            ..._options.headers,
-          },
+          headers: headers,
           body: jsonEncode(payload),
           // Override base via resolve
         );
@@ -329,44 +310,6 @@ class IntelliToggleUtils {
     throw ApiException('Max retries exceeded');
   }
 
-  /// Check for configuration changes using ETag
-  ///
-  /// Makes a HEAD request to check if the configuration has changed
-  /// since the last check. Uses ETag for efficient change detection.
-  ///
-  /// [sdkKey] - SDK key for authentication
-  /// Returns true if configuration has changed, false otherwise
-  Future<bool> checkForChanges(String sdkKey) async {
-    try {
-      final response = await _makeRequest(
-        'HEAD',
-        '/api/v1/flags/config',
-        headers: buildHeadersWithSDKKey(sdkKey),
-      );
-
-      final currentEtag = response.headers['etag'];
-
-      // Compare with last known ETag
-      if (_lastEtag != null && _lastEtag != currentEtag) {
-        if (_options.enableLogging) {
-          print(
-            '[IntelliToggle] Configuration changed. ETag: $_lastEtag -> $currentEtag',
-          );
-        }
-        _lastEtag = currentEtag;
-        return true;
-      }
-
-      _lastEtag = currentEtag;
-      return false;
-    } catch (error) {
-      if (_options.enableLogging) {
-        print('[IntelliToggle] Error checking for changes: $error');
-      }
-      // Don't throw on polling errors - just return false
-      return false;
-    }
-  }
 
   /// Make HTTP request with retry logic and exponential backoff (max 30s)
   ///

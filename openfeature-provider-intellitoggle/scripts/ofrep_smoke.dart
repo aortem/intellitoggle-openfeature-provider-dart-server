@@ -7,7 +7,6 @@ Future<void> main() async {
   final token = Platform.environment['OFREP_AUTH_TOKEN'] ?? 'changeme-token';
 
   final provider = IntelliToggleProvider(
-    sdkKey: token,
     clientId: "client_",
     clientSecret: "cs_",
     tenantId: "tenant_",
