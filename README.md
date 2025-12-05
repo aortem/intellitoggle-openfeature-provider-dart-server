@@ -196,6 +196,37 @@ provider.events.listen((event) {
 });
 ```
 
+---
+
+## Running Conformance Tests (Appendix B)
+
+This repository includes the official OpenFeature Appendix B Gherkin conformance tests, wired against the IntelliToggle Dart provider using the in-memory provider.
+
+### Local Execution
+
+From the repository root:
+
+```bash
+git submodule update --init --recursive
+dart pub get
+dart test -r expanded test/gherkin/gherkin_suite_test.dart
+```
+
+This will:
+
+- Resolve the `vendor/openfeature-spec` submodule
+- Run the Appendix B features (`evaluation_v2`, `contextMerging`, `metadata`, `hooks`) via the Gherkin harness
+
+### CI/CD
+
+The `gherkin_e2e` GitLab job runs automatically:
+
+- Executes `dart test` for `test/gherkin/gherkin_suite_test.dart`
+- Generates a JUnit report at `test-results.xml`
+- Uploads artifacts:
+  - `test-results.xml`
+  - `test/gherkin/_tmp/` (expanded feature files, debug artifacts)
+
 ### Global Context
 
 ```dart
