@@ -41,7 +41,11 @@ import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellit
 
 void main() async {
   final provider = IntelliToggleProvider(
-    sdkKey: 'YOUR_INTELLITOGGLE_SDK_KEY',
+    clientId: 'YOUR_INTELLITOGGLE_CLIENT_ID',
+    clientSecret: 'YOUR_INTELLITOGGLE_CLIENT_SECRET',
+    tenantId: 'YOUR_INTELLITOGGLE_TENANT_ID',
+    // Optional: override default scope (defaults to `flags:evaluate`)
+    // oauthScope: 'flags:evaluate projects:read',
   );
 
   await OpenFeatureAPI().setProvider(provider);
@@ -139,6 +143,19 @@ Configure using environment variables:
 | `OREP_PORT`       | `8080`           |
 | `OREP_HOST`       | `0.0.0.0`        |
 | `OREP_AUTH_TOKEN` | `changeme-token` |
+| `OREP_PROVIDER_MODE` | `inmemory` (`intellitoggle` to use remote provider) |
+| `INTELLITOGGLE_CLIENT_ID` | Required when `OREP_PROVIDER_MODE=intellitoggle` |
+| `INTELLITOGGLE_CLIENT_SECRET` | Required when `OREP_PROVIDER_MODE=intellitoggle` |
+| `INTELLITOGGLE_TENANT_ID` | Required when `OREP_PROVIDER_MODE=intellitoggle` |
+| `INTELLITOGGLE_OAUTH_SCOPE` | Optional OAuth scope override (`flags:evaluate`) |
+| `INTELLITOGGLE_ENV` | `production` or `development` |
+
+Example multi-context GET:
+
+```bash
+curl -H "Authorization: Bearer $OREP_AUTH_TOKEN" \
+  "http://localhost:8080/v1/flags/my-flag/evaluate?type=boolean&default=false&context=%7B%22kind%22%3A%22multi%22%2C%22user%22%3A%7B%22targetingKey%22%3A%22user-123%22%7D%2C%22org%22%3A%7B%22targetingKey%22%3A%22org-999%22%7D%7D"
+```
 
 ### OFREP Client (Remote Evaluation)
 
@@ -231,5 +248,7 @@ Environment variables:
 | `OAUTH_JWT_HS256_SECRET` | (unset) |
 | `OAUTH_EXPECTED_AUD`     | (unset) |
 | `OAUTH_EXPECTED_ISS`     | (unset) |
+
+Set `OREP_PROVIDER_MODE=intellitoggle` plus the same `INTELLITOGGLE_CLIENT_ID` / `INTELLITOGGLE_CLIENT_SECRET` / `INTELLITOGGLE_TENANT_ID` variables (and optional `INTELLITOGGLE_OAUTH_SCOPE`) from the HTTP gateway table when you want the gRPC server to call the real backend.
 
 Protobufs are in `protos/ofrep.proto`. Generated Dart used by the server is vendored under `lib/src/gen/` for convenience.

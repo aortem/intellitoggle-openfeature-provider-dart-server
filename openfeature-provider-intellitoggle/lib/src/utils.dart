@@ -6,9 +6,6 @@ import 'package:http/http.dart' as http;
 import 'options.dart';
 
 /// HTTP utilities and helper functions for IntelliToggle API communication
-///
-/// Handles HTTP requests, retry logic, error handling, and API-specific formatting
-/// for communication with the IntelliToggle service.
 class IntelliToggleUtils {
   final http.Client _httpClient;
   final IntelliToggleOptions _options;
@@ -17,7 +14,7 @@ class IntelliToggleUtils {
 
   /// Create a canonical JSON string with sorted keys for stable hashing
   String _canonicalJson(Map<String, dynamic> value) {
-    List<String> keys = value.keys.map((k) => k.toString()).toList()..sort();
+    final keys = value.keys.map((k) => k.toString()).toList()..sort();
     final map = <String, dynamic>{};
     for (final k in keys) {
       final v = value[k];
@@ -29,39 +26,29 @@ class IntelliToggleUtils {
     }
     return jsonEncode(map);
   }
-  Map<String, String> buildHeaders(String sdkKey) {
-    // Never log or expose the SDK key
+
+  Map<String, String> buildHeaders(String accessToken, {String? tenantId}) {
+    // Never log or expose secrets
     return {
-      'Authorization': 'Bearer $sdkKey',
+      'Authorization': 'Bearer $accessToken',
       'Content-Type': 'application/json',
       'User-Agent': _options.userAgent,
       'Accept': 'application/json',
       'X-SDK-Version': '1.0.0',
       'X-SDK-Language': 'dart',
+      if (tenantId != null && tenantId.isNotEmpty) 'X-Tenant-ID': tenantId,
       ..._options.headers,
     };
   }
 
   /// Evaluate a flag via IntelliToggle API
-  ///
-  /// Makes a POST request to the flag evaluation endpoint with the provided
-  /// context and returns the evaluation result.
-  ///
-  /// [sdkKey] - SDK key for authentication
-  /// [flagKey] - The flag to evaluate
-  /// [context] - Processed evaluation context
-  /// [valueType] - Expected value type (boolean, string, etc.)
-  ///
-  /// Returns the API response as a Map
-  /// Throws [FlagNotFoundException] if flag doesn't exist
-  /// Throws [AuthenticationException] if SDK key is invalid
-  /// Throws [ApiException] for other API errors
   Future<Map<String, dynamic>> evaluateFlag(
-    String sdkKey,
+    String accessToken,
     String flagKey,
     Map<String, dynamic> context,
-    String valueType,
-  ) async {
+    String valueType, {
+    String? tenantId,
+  }) async {
     final payload = {
       'flagKey': flagKey,
       'context': context,
@@ -69,24 +56,29 @@ class IntelliToggleUtils {
       'timestamp': DateTime.now().toIso8601String(),
     };
     if (_options.enableLogging) {
-      // Never log the SDK key
+      // Never log credentials or resolved values
       print('[IntelliToggle] Evaluating flag: $flagKey with context: $context');
     }
     // Enforce TLS for production
-    if (_options.baseUri.scheme == 'http' && _options.baseUri.host != 'localhost') {
-      throw Exception('In production, only HTTPS URLs are allowed for IntelliToggle API.');
+    if (_options.baseUri.scheme == 'http' &&
+        _options.baseUri.host != 'localhost') {
+      throw Exception(
+        'In production, only HTTPS URLs are allowed for IntelliToggle API.',
+      );
     }
     int attempts = 0;
-    int maxDelayMs = 30000; // 30 seconds
+    const int maxDelayMs = 30000; // 30 seconds
     while (attempts < _options.maxRetries) {
       try {
         if (_options.enableLogging) {
-          print('[IntelliToggle] $valueType flag evaluation attempt ${attempts + 1}');
+          print(
+            '[IntelliToggle] $valueType flag evaluation attempt ${attempts + 1}',
+          );
         }
         final response = await _makeRequest(
           'POST',
           '/api/v1/flags/evaluate',
-          headers: buildHeaders(sdkKey),
+          headers: buildHeaders(accessToken, tenantId: tenantId),
           body: jsonEncode(payload),
         );
         if (response.statusCode == 200) {
@@ -98,15 +90,23 @@ class IntelliToggleUtils {
         } else if (response.statusCode == 404) {
           throw FlagNotFoundException('Flag "$flagKey" not found');
         } else if (response.statusCode == 401) {
-          throw AuthenticationException('Invalid SDK key');
+          throw AuthenticationException('Invalid IntelliToggle credentials');
         } else {
-          throw ApiException('API request failed: "+_sanitizeError(response.body)+"', code: response.statusCode.toString());
+          throw ApiException(
+            'API request failed: ${_sanitizeError(response.body)}',
+            code: response.statusCode.toString(),
+          );
         }
       } catch (error) {
         attempts++;
         if (attempts >= _options.maxRetries) rethrow;
         // Exponential backoff with cap
-        final delay = Duration(milliseconds: math.min(_options.retryDelay.inMilliseconds * (1 << (attempts - 1)), maxDelayMs));
+        final delay = Duration(
+          milliseconds: math.min(
+            _options.retryDelay.inMilliseconds * (1 << (attempts - 1)),
+            maxDelayMs,
+          ),
+        );
         await Future.delayed(delay);
       }
     }
@@ -114,18 +114,13 @@ class IntelliToggleUtils {
   }
 
   /// Evaluate a flag via OFREP (Appendix C) endpoint
-  ///
-  /// Endpoint: POST {base}/v1/flags/{flagKey}/evaluate
-  /// Request: { defaultValue, type, context }
-  /// Response: { value, reason?, variant?, flagMetadata? }
   Future<Map<String, dynamic>> evaluateFlagOfrep(
-    String sdkKey,
+    String authToken,
     String flagKey,
     Map<String, dynamic> context,
     String valueType,
     dynamic defaultValue,
   ) async {
-    // Caching: key on flagKey + type + context hash
     final ctxStr = _canonicalJson(context);
     final cacheKeySource = '$flagKey|$valueType|$ctxStr';
     final cacheKey = base64Url.encode(utf8.encode(cacheKeySource));
@@ -141,8 +136,9 @@ class IntelliToggleUtils {
     };
 
     final base = _options.ofrepBaseUri ?? _options.baseUri;
-    // Enforce TLS unless localhost
-    if (base.scheme == 'http' && base.host != 'localhost' && base.host != '127.0.0.1') {
+    if (base.scheme == 'http' &&
+        base.host != 'localhost' &&
+        base.host != '127.0.0.1') {
       throw Exception('OFREP requires HTTPS in non-local environments.');
     }
 
@@ -154,18 +150,19 @@ class IntelliToggleUtils {
           'POST',
           '/v1/flags/$flagKey/evaluate',
           headers: {
-            'Authorization': 'Bearer ${_options.ofrepAuthToken ?? sdkKey}',
+            'Authorization': 'Bearer ${_options.ofrepAuthToken ?? authToken}',
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'User-Agent': _options.userAgent,
             ..._options.headers,
           },
           body: jsonEncode(payload),
-          // Override base via resolve
         );
         if (response.statusCode == 200) {
           if (_options.enableLogging) {
-            print('[IntelliToggle] OFREP raw body (${response.body.length} bytes)');
+            print(
+              '[IntelliToggle] OFREP raw body (${response.body.length} bytes)',
+            );
           }
           final result = jsonDecode(response.body) as Map<String, dynamic>;
           if (_options.enableLogging) {
@@ -176,18 +173,25 @@ class IntelliToggleUtils {
         } else if (response.statusCode == 404) {
           throw FlagNotFoundException('Flag "$flagKey" not found');
         } else if (response.statusCode == 400) {
-          // Treat bad request as type or request mismatch
-          throw TypeMismatchException('Invalid type or request for flag "$flagKey"');
+          throw TypeMismatchException(
+            'Invalid type or request for flag "$flagKey"',
+          );
         } else if (response.statusCode == 401 || response.statusCode == 403) {
           throw AuthenticationException('Unauthorized');
         } else {
-          throw ApiException('OFREP request failed', code: response.statusCode.toString());
+          throw ApiException(
+            'OFREP request failed',
+            code: response.statusCode.toString(),
+          );
         }
       } catch (error) {
         attempts++;
         if (attempts >= _options.maxRetries) rethrow;
         final delay = Duration(
-          milliseconds: math.min(_options.retryDelay.inMilliseconds * (1 << (attempts - 1)), maxDelayMs),
+          milliseconds: math.min(
+            _options.retryDelay.inMilliseconds * (1 << (attempts - 1)),
+            maxDelayMs,
+          ),
         );
         await Future.delayed(delay);
       }
@@ -196,23 +200,18 @@ class IntelliToggleUtils {
   }
 
   /// Check for configuration changes using ETag
-  ///
-  /// Makes a HEAD request to check if the configuration has changed
-  /// since the last check. Uses ETag for efficient change detection.
-  ///
-  /// [sdkKey] - SDK key for authentication
-  /// Returns true if configuration has changed, false otherwise
-  Future<bool> checkForChanges(String sdkKey) async {
+  Future<bool> checkForChanges(
+    String accessToken, {
+    String? tenantId,
+  }) async {
     try {
       final response = await _makeRequest(
         'HEAD',
         '/api/v1/flags/config',
-        headers: buildHeaders(sdkKey),
+        headers: buildHeaders(accessToken, tenantId: tenantId),
       );
 
       final currentEtag = response.headers['etag'];
-
-      // Compare with last known ETag
       if (_lastEtag != null && _lastEtag != currentEtag) {
         if (_options.enableLogging) {
           print(
@@ -229,33 +228,23 @@ class IntelliToggleUtils {
       if (_options.enableLogging) {
         print('[IntelliToggle] Error checking for changes: $error');
       }
-      // Don't throw on polling errors - just return false
       return false;
     }
   }
 
   /// Make HTTP request with retry logic and exponential backoff (max 30s)
-  ///
-  /// Implements automatic retry with exponential backoff for resilient
-  /// communication with the IntelliToggle API.
-  ///
-  /// [method] - HTTP method (GET, POST, HEAD, etc.)
-  /// [path] - API endpoint path
-  /// [headers] - HTTP headers
-  /// [body] - Request body (for POST/PUT)
-  ///
-  /// Returns the HTTP response
-  /// Throws the last encountered exception if all retries fail
   Future<http.Response> _makeRequest(
     String method,
     String path, {
     Map<String, String>? headers,
     String? body,
   }) async {
-    final base = _options.useOfrep ? (_options.ofrepBaseUri ?? _options.baseUri) : _options.baseUri;
+    final base = _options.useOfrep
+        ? (_options.ofrepBaseUri ?? _options.baseUri)
+        : _options.baseUri;
     final uri = base.resolve(path);
     int attempts = 0;
-    final int maxBackoffMs = 30000;
+    const int maxBackoffMs = 30000;
     while (attempts < _options.maxRetries) {
       try {
         if (_options.enableLogging) {
@@ -267,7 +256,11 @@ class IntelliToggleUtils {
             responseFuture = _httpClient.get(uri, headers: headers);
             break;
           case 'POST':
-            responseFuture = _httpClient.post(uri, headers: headers, body: body);
+            responseFuture = _httpClient.post(
+              uri,
+              headers: headers,
+              body: body,
+            );
             break;
           case 'HEAD':
             responseFuture = _httpClient.head(uri, headers: headers);
@@ -283,7 +276,9 @@ class IntelliToggleUtils {
       } catch (error) {
         attempts++;
         if (_options.enableLogging) {
-          print('[IntelliToggle] Request failed (attempt $attempts): ${_sanitizeError(error)}');
+          print(
+            '[IntelliToggle] Request failed (attempt $attempts): ${_sanitizeError(error)}',
+          );
         }
         if (attempts >= _options.maxRetries) {
           if (error is TimeoutException) {
@@ -291,8 +286,11 @@ class IntelliToggleUtils {
           }
           throw ApiException(_sanitizeError(error));
         }
-        final base = _options.retryDelay.inMilliseconds * math.pow(2, attempts - 1).toInt();
-        final backoffDelay = Duration(milliseconds: math.min(base, maxBackoffMs));
+        final baseDelay = _options.retryDelay.inMilliseconds *
+            math.pow(2, attempts - 1).toInt();
+        final backoffDelay = Duration(
+          milliseconds: math.min(baseDelay, maxBackoffMs),
+        );
         if (_options.enableLogging) {
           print('[IntelliToggle] Retrying in ${backoffDelay.inMilliseconds}ms');
         }
@@ -303,7 +301,6 @@ class IntelliToggleUtils {
   }
 
   String _sanitizeError(dynamic error) {
-    // Remove sensitive info and format error message
     final msg = error?.toString() ?? 'Unknown error';
     if (msg.contains('Bearer')) {
       return 'An error occurred (details hidden for security)';
@@ -312,12 +309,6 @@ class IntelliToggleUtils {
   }
 }
 
-/// Custom exceptions for IntelliToggle API errors
-///
-/// These exceptions provide specific error types for different API failure modes,
-/// allowing for more targeted error handling in application code.
-
-/// Exception thrown when a requested flag is not found
 class FlagNotFoundException implements Exception {
   final String message;
   FlagNotFoundException(this.message);
@@ -325,7 +316,6 @@ class FlagNotFoundException implements Exception {
   String toString() => 'FlagNotFoundException: $message';
 }
 
-/// Exception thrown when a type mismatch occurs during flag evaluation
 class TypeMismatchException implements Exception {
   final String message;
   TypeMismatchException(this.message);
@@ -333,7 +323,6 @@ class TypeMismatchException implements Exception {
   String toString() => 'TypeMismatchException: $message';
 }
 
-/// Exception thrown when authentication fails (invalid SDK key)
 class AuthenticationException implements Exception {
   final String message;
   AuthenticationException(this.message);
@@ -341,7 +330,6 @@ class AuthenticationException implements Exception {
   String toString() => 'AuthenticationException: $message';
 }
 
-/// General API exception for other HTTP errors
 class ApiException implements Exception {
   final String message;
   final String? code;
