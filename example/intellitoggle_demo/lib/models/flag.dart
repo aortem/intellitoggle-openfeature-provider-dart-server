@@ -24,9 +24,6 @@ class Flag {
   });
 
   factory Flag.fromJson(Map<String, dynamic> json) {
-    // Handle both 'variations' and 'flag_variations' field names
-    final variationsJson = json['flag_variations'] ?? json['variations'];
-
     return Flag(
       key: json['key'] as String,
       name: json['name'] as String,
@@ -35,20 +32,16 @@ class Flag {
       enabled: json['enabled'] as bool? ?? true,
       defaultValue: json['defaultValue'],
       variations:
-          (variationsJson as List?)
+          (json['variations'] as List?)
               ?.map((v) => FlagVariation.fromJson(v))
               .toList() ??
           [],
       tags: (json['tags'] as List?)?.cast<String>() ?? [],
       createdAt: DateTime.parse(
-        json['createdAt'] ??
-            json['created_at'] as String? ??
-            DateTime.now().toIso8601String(),
+        json['created_at'] as String? ?? DateTime.now().toIso8601String(),
       ),
       updatedAt: DateTime.parse(
-        json['updatedAt'] ??
-            json['updated_at'] as String? ??
-            DateTime.now().toIso8601String(),
+        json['updated_at'] as String? ?? DateTime.now().toIso8601String(),
       ),
     );
   }
@@ -61,10 +54,10 @@ class Flag {
       'type': type,
       'enabled': enabled,
       'defaultValue': defaultValue,
-      'flag_variations': variations.map((v) => v.toJson()).toList(),
+      'variations': variations.map((v) => v.toJson()).toList(),
       'tags': tags,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 

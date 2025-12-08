@@ -68,7 +68,12 @@ void main() async {
 Use the included `InMemoryProvider` for fast testing without external dependencies:
 
 ```dart
-final provider = InMemoryProvider();
+// Seed initial flags at construction (optional)
+final provider = InMemoryProvider(initialFlags: {
+  'experimental-mode': true,
+  'welcome-text': (Map<String, dynamic> ctx) =>
+      ctx['role'] == 'beta_tester' ? 'Welcome, beta!' : 'Welcome!',
+});
 provider.setFlag('experimental-mode', true);
 
 await OpenFeatureAPI().setProvider(provider);
@@ -78,8 +83,47 @@ final enabled = await client.getBooleanValue('experimental-mode', false);
 print('Flag = $enabled'); // true
 ```
 
+Listen for configuration change events (union of previous and new keys is emitted):
+
+```dart
+final sub = provider.events.listen((e) {
+  if (e.type == IntelliToggleEventType.configurationChanged) {
+    print('Flags changed: ${e.data?['flagsChanged']}');
+  }
+});
+```
+
+Context-aware flags can be set with a callback:
+
+```dart
+provider.setFlag('is-admin', (Map<String, dynamic> ctx) => ctx['role'] == 'admin');
+```
+
 ---
 
+## 🪵 Console Logging Hook
+
+Log evaluation lifecycle events to stdout. Optionally include the evaluation context for debugging:
+
+`dart
+final hook = ConsoleLoggingHook(printContext: true);
+
+// Add globally
+OpenFeatureAPI().addHooks([hook]);
+
+// Or add to a specific client
+final hookManager = HookManager();
+hookManager.addHook(hook);
+`
+
+Example log entries (JSON):
+
+`
+[OpenFeature] {"stage":"before","domain":"flag_evaluation","provider_name":"InMemoryProvider","flag_key":"new-ui","default_value":false}
+[OpenFeature] {"stage":"after","domain":"flag_evaluation","provider_name":"InMemoryProvider","flag_key":"new-ui","default_value":false,"result":true}
+`
+
+---
 ## ⚙️ OREP Server (Optional)
 
 Start a remote flag evaluation API:
@@ -95,6 +139,55 @@ Configure using environment variables:
 | `OREP_PORT`       | `8080`           |
 | `OREP_HOST`       | `0.0.0.0`        |
 | `OREP_AUTH_TOKEN` | `changeme-token` |
+
+### OFREP Client (Remote Evaluation)
+
+The provider can call an OFREP-compliant endpoint for remote flag evaluation.
+
+- Enable via options or environment variables.
+- Maps OFREP responses to OpenFeature `ProviderEvaluation` including `value`, `variant`, `reason`, `errorCode`, and `flagMetadata`.
+- Supports retries, timeouts, and optional in-memory cache keyed by `(flagKey + context)`.
+
+Environment variables:
+
+```
+OFREP_ENABLED=true
+OFREP_BASE_URL=https://ofrep.example.com
+OFREP_AUTH_TOKEN=your_bearer_token
+OFREP_TIMEOUT_MS=5000
+OFREP_MAX_RETRIES=3
+OFREP_CACHE_TTL_MS=60000
+```
+
+Code example:
+
+```dart
+final provider = IntelliToggleProvider(
+  sdkKey: 'YOUR_TOKEN', // used if OFREP_AUTH_TOKEN not set
+  options: IntelliToggleOptions(
+    useOfrep: true,
+    ofrepBaseUri: Uri.parse('https://ofrep.example.com'),
+    cacheTtl: const Duration(minutes: 1),
+    maxRetries: 3,
+    timeout: const Duration(seconds: 5),
+  ),
+);
+await OpenFeatureAPI().setProvider(provider);
+
+final client = IntelliToggleClient(
+  FeatureClient(
+    metadata: ClientMetadata(name: 'service-x'),
+    hookManager: HookManager(),
+  ),
+);
+
+final result = await client.getBooleanValue(
+  'my-flag',
+  false,
+  targetingKey: 'user-123',
+  evaluationContext: {'region': 'us-east-1'},
+);
+```
 
 ---
 

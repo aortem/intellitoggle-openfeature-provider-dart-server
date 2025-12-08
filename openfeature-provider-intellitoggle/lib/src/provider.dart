@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:openfeature_dart_server_sdk/feature_provider.dart';
 import 'package:http/http.dart' as http;
+import '../utils/telemetry.dart';
 
 import 'options.dart';
 import 'utils.dart';
@@ -189,86 +190,100 @@ class IntelliToggleProvider implements FeatureProvider {
   /// [defaultValue] - Fallback value
   /// [context] - Evaluation context
   /// [valueType] - Expected value type for API call
-  Future<FlagEvaluationResult<T>> _evaluateFlag<T>(
-    String flagKey,
-    T defaultValue,
-    Map<String, dynamic>? context,
-    String valueType,
-  ) async {
-    try {
-      if (_state != ProviderState.READY) {
-        await _initCompleter.future;
-      }
-      final processedContext = _contextProcessor.processContext(context ?? {});
-      final response = await _utils.evaluateFlag(
-        _sdkKey,
-        flagKey,
-        processedContext,
-        valueType,
-      );
-      final now = DateTime.now();
-      ErrorCode? errorCode;
-      if (response['errorCode'] != null) {
-        switch (response['errorCode'].toString()) {
-          case 'FLAG_NOT_FOUND':
-            errorCode = ErrorCode.FLAG_NOT_FOUND;
-            break;
-          case 'TYPE_MISMATCH':
-            errorCode = ErrorCode.TYPE_MISMATCH;
-            break;
-          case 'GENERAL':
-            errorCode = ErrorCode.GENERAL;
-            break;
-          default:
-            errorCode = null;
-        }
-      }
-      final result = FlagEvaluationResult<T>(
-        flagKey: flagKey,
-        value: response['value'] as T? ?? defaultValue,
-        reason: response['reason']?.toString() ?? 'DEFAULT',
-        variant: response['variant']?.toString(),
-        errorCode: errorCode,
-        errorMessage: _sanitizeError(response['errorMessage']),
-        evaluatedAt: now,
-        evaluatorId: 'IntelliToggle',
-      );
-      _eventEmitter.emit(
-        IntelliToggleEvent.flagEvaluated(flagKey, result.value, result.reason, variant: result.variant, context: processedContext),
-      );
-      return result;
-    } on FlagNotFoundException catch (error) {
-      return FlagEvaluationResult<T>(
-        flagKey: flagKey,
-        value: defaultValue,
-        reason: 'ERROR',
-        errorCode: ErrorCode.FLAG_NOT_FOUND,
-        errorMessage: _sanitizeError(error),
-        evaluatedAt: DateTime.now(),
-        evaluatorId: 'IntelliToggle',
-      );
-    } on TypeMismatchException catch (error) {
-      return FlagEvaluationResult<T>(
-        flagKey: flagKey,
-        value: defaultValue,
-        reason: 'ERROR',
-        errorCode: ErrorCode.TYPE_MISMATCH,
-        errorMessage: _sanitizeError(error),
-        evaluatedAt: DateTime.now(),
-        evaluatorId: 'IntelliToggle',
-      );
-    } catch (error) {
-      return FlagEvaluationResult<T>(
-        flagKey: flagKey,
-        value: defaultValue,
-        reason: 'ERROR',
-        errorCode: ErrorCode.GENERAL,
-        errorMessage: _sanitizeError(error),
-        evaluatedAt: DateTime.now(),
-        evaluatorId: 'IntelliToggle',
-      );
+Future<FlagEvaluationResult<T>> _evaluateFlag<T>(
+  String flagKey,
+  T defaultValue,
+  Map<String, dynamic>? context,
+  String valueType,
+) async {
+  // Start time for latency measurement
+  final start = DateTime.now();
+
+  try {
+    if (_state != ProviderState.READY) {
+      await _initCompleter.future;
     }
+
+    final processedContext = _contextProcessor.processContext(context ?? {});
+
+    final response = await _utils.evaluateFlag(
+      _sdkKey,
+      flagKey,
+      processedContext,
+      valueType,
+    );
+
+    final now = DateTime.now();
+    ErrorCode? errorCode;
+
+    // Parse errorCode if present
+    if (response['errorCode'] != null) {
+      switch (response['errorCode'].toString()) {
+        case 'FLAG_NOT_FOUND':
+          errorCode = ErrorCode.FLAG_NOT_FOUND;
+          break;
+        case 'TYPE_MISMATCH':
+          errorCode = ErrorCode.TYPE_MISMATCH;
+          break;
+        case 'GENERAL':
+          errorCode = ErrorCode.GENERAL;
+          break;
+        default:
+          errorCode = null;
+      }
+    }
+
+    // Telemetry: success count + latency
+    Telemetry.metrics.increment('feature_flag.evaluation_success_count');
+    Telemetry.recordLatency(
+      flagKey,
+      DateTime.now().difference(start),
+    );
+
+    final result = FlagEvaluationResult<T>(
+      flagKey: flagKey,
+      value: response['value'] as T? ?? defaultValue,
+      reason: response['reason']?.toString() ?? 'DEFAULT',
+      variant: response['variant']?.toString(),
+      errorCode: errorCode,
+      errorMessage: _sanitizeError(response['errorMessage']),
+      evaluatedAt: now,
+      evaluatorId: 'IntelliToggle',
+    );
+
+    _eventEmitter.emit(
+      IntelliToggleEvent.flagEvaluated(
+        flagKey,
+        result.value,
+        result.reason,
+        variant: result.variant,
+        context: processedContext,
+      ),
+    );
+
+    return result;
+
+  } catch (error) {
+    // Telemetry: error count + latency
+    Telemetry.metrics.increment('feature_flag.evaluation_error_count');
+    Telemetry.recordLatency(
+      flagKey,
+      DateTime.now().difference(start),
+    );
+
+    // Rebuild the appropriate error result
+    return FlagEvaluationResult<T>(
+      flagKey: flagKey,
+      value: defaultValue,
+      reason: 'ERROR',
+      errorCode: ErrorCode.GENERAL,
+      errorMessage: _sanitizeError(error),
+      evaluatedAt: DateTime.now(),
+      evaluatorId: 'IntelliToggle',
+    );
   }
+}
+
 
   /// Test connection to IntelliToggle API health endpoint
   Future<void> _testConnection() async {
