@@ -21,9 +21,9 @@ Add to your server-side Dart project:
 
 ```yaml
 dependencies:
-  openfeature_dart_server_sdk: ^0.1.0
-  openfeature_provider_intellitoggle: ^0.0.2
-````
+  openfeature_dart_server_sdk: ^0.0.13
+  openfeature_provider_intellitoggle: ^0.0.5
+```
 
 Then install:
 
@@ -36,28 +36,89 @@ dart pub get
 ## 🚀 Getting Started
 
 ```dart
-import 'package:openfeature_dart_server_sdk/openfeature_dart_server_sdk.dart';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 
 void main() async {
+  print('Starting IntelliToggle provider with OAuth2 Credentials...\n');
+
   final provider = IntelliToggleProvider(
-    sdkKey: 'YOUR_INTELLITOGGLE_SDK_KEY',
+    clientId: "client_id",
+    clientSecret: "cs_secret",
+    tenantId: "tenant_id",
+    options: IntelliToggleOptions(enableLogging: true),
   );
 
-  await OpenFeatureAPI().setProvider(provider);
+  print('Provider created, initializing...\n');
+  await provider.initialize();
+  print('✓ Provider initialized successfully!\n');
 
-  final client = IntelliToggleClient(namespace: 'my-service');
+  final api = OpenFeatureAPI();
+  api.setProvider(provider);
 
-  final enabled = await client.getBooleanValue(
-    'new-dashboard-enabled',
-    false,
-    evaluationContext: {
-      'targetingKey': 'user-123',
-      'role': 'beta_tester',
-    },
+  // Evaluate a boolean flag
+  // result.flagKey, result.value, result.evaluatedAt, result.reason
+  final result = await provider.getBooleanFlag('new-dashboard', false);
+
+  if (result.errorCode != null) {
+    print('✗ Error Code: ${result.errorCode}');
+    print('✗ Error Message: ${result.errorMessage}');
+  } else {
+    print('');
+    print('Flag value: ${result.value}'); // Flag evaluated value
+  }
+  print('');
+
+  await provider.shutdown();
+  print('✓ Test completed successfully!');
+}
+```
+
+---
+
+## 🧪 IntelliToggleClient Test
+
+```dart
+import 'package:openfeature_dart_server_sdk/hooks.dart';
+import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
+
+void main() async {
+  print('Starting IntelliClient test with OAuth2...\n');
+
+  final provider = IntelliToggleProvider(
+    clientId: "client_id",
+    clientSecret: "cs_secret",
+    tenantId: "tenant_id",
+    options: IntelliToggleOptions(
+      enableLogging: true,
+    ),
   );
 
-  print('Feature enabled: $enabled');
+  print('Provider created, initializing...\n');
+  await provider.initialize();
+  print('✓ Provider initialized successfully!\n');
+
+  final api = OpenFeatureAPI();
+  api.setProvider(provider);
+
+  // Create a client
+  final clientMetadata = ClientMetadata(name: 'test-client', version: '0.0.1');
+  final hookManager = HookManager();
+  final defaultEvalContext = EvaluationContext(attributes: {});
+  final featureClient = FeatureClient(
+    metadata: clientMetadata,
+    provider: provider,
+    hookManager: hookManager,
+    defaultContext: defaultEvalContext,
+  );
+  final client = IntelliToggleClient(featureClient);
+
+  // Evaluate your feature flags
+  final newFeatureEnabled = await client.getBooleanValue('new-dashboard-ui', false);
+
+  print('Flag value: ${newFeatureEnabled}');
+
+  await provider.shutdown();
+  print('✓ Test completed successfully!');
 }
 ```
 
@@ -68,14 +129,43 @@ void main() async {
 Use the included `InMemoryProvider` for fast testing without external dependencies:
 
 ```dart
-final provider = InMemoryProvider();
-provider.setFlag('experimental-mode', true);
+import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
+import 'package:openfeature_dart_server_sdk/hooks.dart';
 
-await OpenFeatureAPI().setProvider(provider);
+void main() async {
+  print('Starting IntelliToggle provider test with InMemoryProvider...\n');
 
-final client = IntelliToggleClient(namespace: 'test');
-final enabled = await client.getBooleanValue('experimental-mode', false);
-print('Flag = $enabled'); // true
+  final provider = InMemoryProvider();
+
+  print('Provider created, initializing...');
+  await provider.initialize();
+  print('✓ Provider initialized successfully!\n');
+
+  final api = OpenFeatureAPI();
+  api.setProvider(provider);
+
+  // Create a client
+  final clientMetadata = ClientMetadata(name: 'test-client', version: '0.0.1');
+  final hookManager = HookManager();
+  final defaultEvalContext = EvaluationContext(attributes: {});
+  final featureClient = FeatureClient(
+    metadata: clientMetadata,
+    provider: provider,
+    hookManager: hookManager,
+    defaultContext: defaultEvalContext,
+  );
+  final client = IntelliToggleClient(featureClient);
+
+  provider.setFlag('bool-flag', true);
+
+  // Evaluate your feature flags
+  final newFeatureEnabled = await client.getBooleanValue('bool-flag', false);
+
+  print('Flag value: $newFeatureEnabled'); // true
+
+  await provider.shutdown();
+  print('✓ Test completed successfully!');
+}
 ```
 
 ---
@@ -149,10 +239,10 @@ final result = await client.getBooleanValue(
 
 ## 📚 Resources
 
-* [IntelliToggle Docs](https://intellitoggle.com)
-* [OpenFeature Dart SDK](https://pub.dev/packages/openfeature_dart_server_sdk)
-* [GitHub Repository](https://github.com/aortem/intellitoggle)
-* [OpenFeature Specification](https://openfeature.dev)
+- [IntelliToggle Docs](https://intellitoggle.com)
+- [OpenFeature Dart SDK](https://pub.dev/packages/openfeature_dart_server_sdk)
+- [GitHub Repository](https://github.com/aortem/intellitoggle)
+- [OpenFeature Specification](https://openfeature.dev)
 
 ---
 
