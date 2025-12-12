@@ -1,18 +1,64 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
+
 import 'package:jwt_generator/jwt_generator.dart';
-//import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
+import 'package:openfeature_dart_server_sdk/feature_provider.dart'
+    hide InMemoryProvider;
+import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
+import 'package:openfeature_provider_intellitoggle/src/context.dart';
+
+final IntelliToggleContextProcessor _contextProcessor =
+    IntelliToggleContextProcessor();
+
+Future<FeatureProvider> _createProvider() async {
+  final mode = (Platform.environment['OREP_PROVIDER_MODE'] ?? 'inmemory')
+      .toLowerCase();
+  if (mode == 'intellitoggle') {
+    final clientId = Platform.environment['INTELLITOGGLE_CLIENT_ID'];
+    final clientSecret = Platform.environment['INTELLITOGGLE_CLIENT_SECRET'];
+    final tenantId = Platform.environment['INTELLITOGGLE_TENANT_ID'];
+    final scope = Platform.environment['INTELLITOGGLE_OAUTH_SCOPE'];
+    if (clientId == null ||
+        clientSecret == null ||
+        tenantId == null ||
+        clientId.isEmpty ||
+        clientSecret.isEmpty ||
+        tenantId.isEmpty) {
+      throw StateError(
+        'INTELLITOGGLE_CLIENT_ID, INTELLITOGGLE_CLIENT_SECRET, and INTELLITOGGLE_TENANT_ID must be set when OREP_PROVIDER_MODE=intellitoggle',
+      );
+    }
+    final env = (Platform.environment['INTELLITOGGLE_ENV'] ?? 'production')
+        .toLowerCase();
+    final options = env == 'development'
+        ? IntelliToggleOptions.development()
+        : IntelliToggleOptions.production();
+    final provider = IntelliToggleProvider(
+      clientId: clientId,
+      clientSecret: clientSecret,
+      tenantId: tenantId,
+      oauthScope: scope,
+      options: options,
+    );
+    await provider.initialize();
+    return provider;
+  }
+
+  final inMemory = InMemoryProvider();
+  // Example: Seed some flags for demo/testing
+  inMemory.setFlag('bool-flag', true);
+  inMemory.setFlag('string-flag', 'hello');
+  inMemory.setFlag('int-flag', 42);
+  inMemory.setFlag('double-flag', 3.14);
+  inMemory.setFlag('object-flag', {'foo': 'bar', 'enabled': true});
+  return inMemory;
+}
 
 Future<void> main() async {
-  final provider = InMemoryProvider();
-
-  // Example: Seed some flags for demo/testing
-  provider.setFlag('bool-flag', true);
-  provider.setFlag('string-flag', 'hello');
-  provider.setFlag('int-flag', 42);
-  provider.setFlag('double-flag', 3.14);
-  provider.setFlag('object-flag', {'foo': 'bar', 'enabled': true});
+  final provider = await _createProvider();
+  final inMemory = provider is InMemoryProvider
+      ? provider as InMemoryProvider
+      : null;
 
   final host = Platform.environment['OREP_HOST'] ?? '0.0.0.0';
   final port =
@@ -53,7 +99,9 @@ Future<void> main() async {
           } catch (e) {
             req.response.statusCode = 400;
             req.response.headers.contentType = ContentType.json;
-            req.response.write(jsonEncode({'error': 'Invalid JSON', 'details': e.toString()}));
+            req.response.write(
+              jsonEncode({'error': 'Invalid JSON', 'details': e.toString()}),
+            );
             await req.response.close();
             continue;
           }
@@ -67,29 +115,48 @@ Future<void> main() async {
           }..removeWhere((k, v) => v == null);
         }
 
-        if (!payload.containsKey('defaultValue') || !payload.containsKey('type')) {
+        if (!payload.containsKey('defaultValue') ||
+            !payload.containsKey('type')) {
           req.response.statusCode = 400;
           req.response.headers.contentType = ContentType.json;
-          req.response.write(jsonEncode({'error': 'Missing required fields: defaultValue and type'}));
+          req.response.write(
+            jsonEncode({
+              'error': 'Missing required fields: defaultValue and type',
+            }),
+          );
           await req.response.close();
           continue;
         }
 
         final type = payload['type'];
-        const allowedTypes = ['boolean', 'string', 'integer', 'double', 'float', 'object'];
+        const allowedTypes = [
+          'boolean',
+          'string',
+          'integer',
+          'double',
+          'float',
+          'object',
+        ];
         if (!allowedTypes.contains(type)) {
           req.response.statusCode = 400;
           req.response.headers.contentType = ContentType.json;
-          req.response.write(jsonEncode({'error': 'Invalid flag type', 'allowedTypes': allowedTypes}));
+          req.response.write(
+            jsonEncode({
+              'error': 'Invalid flag type',
+              'allowedTypes': allowedTypes,
+            }),
+          );
           await req.response.close();
           continue;
         }
 
-        // 404 when flag key does not exist (OFREP-guidance)
-        if (!provider.hasFlag(flagKey)) {
+        // 404 when flag key does not exist (OFREP-guidance, in-memory only)
+        if (inMemory != null && !inMemory.hasFlag(flagKey)) {
           req.response.statusCode = 404;
           req.response.headers.contentType = ContentType.json;
-          req.response.write(jsonEncode({'error': 'Flag not found', 'flagKey': flagKey}));
+          req.response.write(
+            jsonEncode({'error': 'Flag not found', 'flagKey': flagKey}),
+          );
           await req.response.close();
           continue;
         }
@@ -134,7 +201,9 @@ Future<void> main() async {
             case 'object':
               result = await provider.getObjectFlag(
                 flagKey,
-                defaultValue == null ? <String, dynamic>{} : defaultValue as Map<String, dynamic>,
+                defaultValue == null
+                    ? <String, dynamic>{}
+                    : defaultValue as Map<String, dynamic>,
                 context: processedContext,
               );
               break;
@@ -147,7 +216,9 @@ Future<void> main() async {
         } catch (e) {
           req.response.statusCode = 400;
           req.response.headers.contentType = ContentType.json;
-          req.response.write(jsonEncode({'error': 'Evaluation failed', 'details': e.toString()}));
+          req.response.write(
+            jsonEncode({'error': 'Evaluation failed', 'details': e.toString()}),
+          );
         }
         await req.response.close();
         continue;
@@ -178,13 +249,25 @@ Future<void> main() async {
           segments[0] == 'v1' &&
           segments[1] == 'provider' &&
           segments[2] == 'seed') {
+        if (inMemory == null) {
+          req.response.statusCode = 501;
+          req.response.headers.contentType = ContentType.json;
+          req.response.write(
+            jsonEncode({
+              'error':
+                  'Seeding flags is only supported when using the InMemoryProvider.',
+            }),
+          );
+          await req.response.close();
+          continue;
+        }
         final body = await utf8.decoder.bind(req).join();
         final Map<String, dynamic> payload = body.isNotEmpty
             ? jsonDecode(body)
             : {};
         final flags = payload['flags'] as Map<String, dynamic>? ?? {};
-        provider.clearFlags();
-        flags.forEach((k, v) => provider.setFlag(k, v));
+        inMemory.clearFlags();
+        flags.forEach((k, v) => inMemory.setFlag(k, v));
         req.response.statusCode = 200;
         req.response.headers.contentType = ContentType.json;
         req.response.write(jsonEncode({'status': 'ok'}));
@@ -198,7 +281,19 @@ Future<void> main() async {
           segments[0] == 'v1' &&
           segments[1] == 'provider' &&
           segments[2] == 'reset') {
-        provider.clearFlags();
+        if (inMemory == null) {
+          req.response.statusCode = 501;
+          req.response.headers.contentType = ContentType.json;
+          req.response.write(
+            jsonEncode({
+              'error':
+                  'Reset is only supported when using the InMemoryProvider.',
+            }),
+          );
+          await req.response.close();
+          continue;
+        }
+        inMemory.clearFlags();
         req.response.statusCode = 200;
         req.response.headers.contentType = ContentType.json;
         req.response.write(jsonEncode({'status': 'ok'}));
@@ -265,8 +360,12 @@ Map<String, dynamic> _orepResponse(dynamic result, String type) {
 }
 
 Map<String, dynamic> processContext(Map<String, dynamic> context) {
-  // Implement your context processing logic here
-  // For now, we just return the context as-is
+  final mode = (Platform.environment['OREP_PROVIDER_MODE'] ?? 'inmemory')
+      .toLowerCase();
+  if (mode == 'intellitoggle') {
+    return _contextProcessor.processContext(context);
+  }
+  // In-memory mode: keep context usage flexible for tests
   return context;
 }
 
@@ -285,9 +384,9 @@ Future<bool> _isAuthorized(HttpRequest req, String requiredToken) async {
   final hsSecret = Platform.environment['OAUTH_JWT_HS256_SECRET'];
   if (hsSecret != null && hsSecret.isNotEmpty) {
     try {
-      final parsed   = ParsedJwt.parse(token);
+      final parsed = ParsedJwt.parse(token);
       final verifier = HmacSignatureVerifier(secret: utf8.encode(hsSecret));
-      final ok       = verifier.verify(parsed.signingInput, parsed.signatureB64);
+      final ok = verifier.verify(parsed.signingInput, parsed.signatureB64);
       if (!ok) return false;
       // Optional claim checks
       final expectedAud = Platform.environment['OAUTH_EXPECTED_AUD'];

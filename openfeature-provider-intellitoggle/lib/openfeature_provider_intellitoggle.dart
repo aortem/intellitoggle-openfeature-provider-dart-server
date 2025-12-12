@@ -21,7 +21,8 @@ export 'src/utils.dart'
         IntelliToggleUtils,
         FlagNotFoundException,
         AuthenticationException,
-        ApiException;
+        ApiException,
+        TypeMismatchException;
 
 // Re-export OpenFeature types
 export 'package:openfeature_dart_server_sdk/open_feature_api.dart';

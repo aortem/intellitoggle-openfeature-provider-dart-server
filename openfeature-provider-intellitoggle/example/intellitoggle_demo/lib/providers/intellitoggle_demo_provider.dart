@@ -10,9 +10,11 @@ class IntelliToggleDemoProvider {
   IntelliToggleDemoProvider(this._config);
 
   Future<void> initialize() async {
-    // Initialize provider with OAuth2 client secret
+    // Initialize provider with OAuth2 client credentials
     _provider = IntelliToggleProvider(
-      sdkKey: _config.clientSecret,
+      clientId: _config.clientId,
+      clientSecret: _config.clientSecret,
+      tenantId: _config.tenantId,
       options: IntelliToggleOptions(
         baseUri: Uri.parse(_config.baseUrl),
         timeout: _config.timeout,

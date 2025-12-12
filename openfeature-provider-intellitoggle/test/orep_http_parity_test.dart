@@ -55,6 +55,12 @@ void main() {
         'OREP_PORT': '$_port',
       },
     );
+    serverProcess.stdout
+        .transform(utf8.decoder)
+        .listen((data) => stdout.write('[orep_server stdout] $data'));
+    serverProcess.stderr
+        .transform(utf8.decoder)
+        .listen((data) => stderr.write('[orep_server stderr] $data'));
     await _waitForServer();
     await _seedBoolFlag();
   });

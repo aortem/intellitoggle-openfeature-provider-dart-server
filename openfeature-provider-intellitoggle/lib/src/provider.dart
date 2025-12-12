@@ -1,6 +1,9 @@
 import 'dart:async';
-import 'package:openfeature_dart_server_sdk/feature_provider.dart';
+import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+import 'package:openfeature_dart_server_sdk/feature_provider.dart';
+
 import '../utils/telemetry.dart';
 
 import 'options.dart';
@@ -17,7 +20,9 @@ import 'events.dart';
 /// Example usage:
 /// ```dart
 /// final provider = IntelliToggleProvider(
-///   sdkKey: 'your-sdk-key',
+///   clientId: 'your-client-id',
+///   clientSecret: 'client-secret',
+///   tenantId: 'tenant-id',
 ///   options: IntelliToggleOptions.production(),
 /// );
 ///
@@ -25,7 +30,10 @@ import 'events.dart';
 /// await api.setProvider(provider);
 /// ```
 class IntelliToggleProvider implements FeatureProvider {
-  final String _sdkKey;
+  final String _clientId;
+  final String _clientSecret;
+  final String _tenantId;
+  final String _oauthScope;
   final IntelliToggleOptions _options;
   final http.Client _httpClient;
   late final IntelliToggleUtils _utils;
@@ -35,16 +43,34 @@ class IntelliToggleProvider implements FeatureProvider {
   Timer? _pollingTimer;
   final Completer<void> _initCompleter = Completer<void>();
 
+  String? _cachedAccessToken;
+  DateTime? _tokenExpiry;
+  final Duration _tokenLeeway = const Duration(minutes: 1);
+
   /// Creates a new IntelliToggle provider instance
   ///
-  /// [sdkKey] - Your IntelliToggle SDK key for authentication
+  /// Provide IntelliToggle OAuth2 client credentials via [clientId],
+  /// [clientSecret], and [tenantId]. Optionally override the requested scope
+  /// with [oauthScope].
+  ///
   /// [options] - Configuration options (defaults to standard settings)
   /// [httpClient] - HTTP client for API calls (uses default if not provided)
   IntelliToggleProvider({
-    required String sdkKey,
+    required String clientId,
+    required String clientSecret,
+    required String tenantId,
+    String? oauthScope,
     IntelliToggleOptions? options,
     http.Client? httpClient,
-  }) : _sdkKey = sdkKey,
+  }) : assert(clientId.trim().isNotEmpty, 'clientId is required'),
+       assert(clientSecret.trim().isNotEmpty, 'clientSecret is required'),
+       assert(tenantId.trim().isNotEmpty, 'tenantId is required'),
+       _clientId = clientId.trim(),
+       _clientSecret = clientSecret.trim(),
+       _tenantId = tenantId.trim(),
+       _oauthScope = (oauthScope == null || oauthScope.trim().isEmpty)
+           ? 'flags:evaluate'
+           : oauthScope.trim(),
        _options = options ?? IntelliToggleOptions(),
        _httpClient = httpClient ?? http.Client() {
     // Initialize utility components
@@ -190,107 +216,114 @@ class IntelliToggleProvider implements FeatureProvider {
   /// [defaultValue] - Fallback value
   /// [context] - Evaluation context
   /// [valueType] - Expected value type for API call
-Future<FlagEvaluationResult<T>> _evaluateFlag<T>(
-  String flagKey,
-  T defaultValue,
-  Map<String, dynamic>? context,
-  String valueType,
-) async {
-  // Start time for latency measurement
-  final start = DateTime.now();
-
-  try {
-    if (_state != ProviderState.READY) {
-      await _initCompleter.future;
-    }
-
-    final processedContext = _contextProcessor.processContext(context ?? {});
-
-    final response = await _utils.evaluateFlag(
-      _sdkKey,
-      flagKey,
-      processedContext,
-      valueType,
-    );
-
-    final now = DateTime.now();
-    ErrorCode? errorCode;
-
-    // Parse errorCode if present
-    if (response['errorCode'] != null) {
-      switch (response['errorCode'].toString()) {
-        case 'FLAG_NOT_FOUND':
-          errorCode = ErrorCode.FLAG_NOT_FOUND;
-          break;
-        case 'TYPE_MISMATCH':
-          errorCode = ErrorCode.TYPE_MISMATCH;
-          break;
-        case 'GENERAL':
-          errorCode = ErrorCode.GENERAL;
-          break;
-        default:
-          errorCode = null;
+  Future<FlagEvaluationResult<T>> _evaluateFlag<T>(
+    String flagKey,
+    T defaultValue,
+    Map<String, dynamic>? context,
+    String valueType,
+  ) async {
+    final start = DateTime.now();
+    try {
+      if (_state != ProviderState.READY) {
+        await _initCompleter.future;
       }
-    }
-
-    // Telemetry: success count + latency
-    Telemetry.metrics.increment('feature_flag.evaluation_success_count');
-    Telemetry.recordLatency(
-      flagKey,
-      DateTime.now().difference(start),
-    );
-
-    final result = FlagEvaluationResult<T>(
-      flagKey: flagKey,
-      value: response['value'] as T? ?? defaultValue,
-      reason: response['reason']?.toString() ?? 'DEFAULT',
-      variant: response['variant']?.toString(),
-      errorCode: errorCode,
-      errorMessage: _sanitizeError(response['errorMessage']),
-      evaluatedAt: now,
-      evaluatorId: 'IntelliToggle',
-    );
-
-    _eventEmitter.emit(
-      IntelliToggleEvent.flagEvaluated(
+      final processedContext = _contextProcessor.processContext(context ?? {});
+      final token = await _getAccessToken();
+      final response = await _utils.evaluateFlag(
+        token,
         flagKey,
-        result.value,
-        result.reason,
-        variant: result.variant,
-        context: processedContext,
-      ),
-    );
+        processedContext,
+        valueType,
+        tenantId: _tenantId,
+      );
+      final now = DateTime.now();
+      ErrorCode? errorCode;
+      if (response['errorCode'] != null) {
+        switch (response['errorCode'].toString()) {
+          case 'FLAG_NOT_FOUND':
+            errorCode = ErrorCode.FLAG_NOT_FOUND;
+            break;
+          case 'TYPE_MISMATCH':
+            errorCode = ErrorCode.TYPE_MISMATCH;
+            break;
+          case 'GENERAL':
+            errorCode = ErrorCode.GENERAL;
+            break;
+          default:
+            errorCode = null;
+        }
+      }
 
-    return result;
+      Telemetry.metrics.increment('feature_flag.evaluation_success_count');
+      Telemetry.recordLatency(flagKey, DateTime.now().difference(start));
 
-  } catch (error) {
-    // Telemetry: error count + latency
-    Telemetry.metrics.increment('feature_flag.evaluation_error_count');
-    Telemetry.recordLatency(
-      flagKey,
-      DateTime.now().difference(start),
-    );
-
-    // Rebuild the appropriate error result
-    return FlagEvaluationResult<T>(
-      flagKey: flagKey,
-      value: defaultValue,
-      reason: 'ERROR',
-      errorCode: ErrorCode.GENERAL,
-      errorMessage: _sanitizeError(error),
-      evaluatedAt: DateTime.now(),
-      evaluatorId: 'IntelliToggle',
-    );
+      final result = FlagEvaluationResult<T>(
+        flagKey: flagKey,
+        value: response['value'] as T? ?? defaultValue,
+        reason: response['reason']?.toString() ?? 'DEFAULT',
+        variant: response['variant']?.toString(),
+        errorCode: errorCode,
+        errorMessage: _sanitizeError(response['errorMessage']),
+        evaluatedAt: now,
+        evaluatorId: 'IntelliToggle',
+      );
+      _eventEmitter.emit(
+        IntelliToggleEvent.flagEvaluated(
+          flagKey,
+          result.value,
+          result.reason,
+          variant: result.variant,
+          context: processedContext,
+        ),
+      );
+      return result;
+    } on FlagNotFoundException catch (error) {
+      Telemetry.metrics.increment('feature_flag.evaluation_error_count');
+      Telemetry.recordLatency(flagKey, DateTime.now().difference(start));
+      return FlagEvaluationResult<T>(
+        flagKey: flagKey,
+        value: defaultValue,
+        reason: 'ERROR',
+        errorCode: ErrorCode.FLAG_NOT_FOUND,
+        errorMessage: _sanitizeError(error),
+        evaluatedAt: DateTime.now(),
+        evaluatorId: 'IntelliToggle',
+      );
+    } on TypeMismatchException catch (error) {
+      Telemetry.metrics.increment('feature_flag.evaluation_error_count');
+      Telemetry.recordLatency(flagKey, DateTime.now().difference(start));
+      return FlagEvaluationResult<T>(
+        flagKey: flagKey,
+        value: defaultValue,
+        reason: 'ERROR',
+        errorCode: ErrorCode.TYPE_MISMATCH,
+        errorMessage: _sanitizeError(error),
+        evaluatedAt: DateTime.now(),
+        evaluatorId: 'IntelliToggle',
+      );
+    } catch (error) {
+      Telemetry.metrics.increment('feature_flag.evaluation_error_count');
+      Telemetry.recordLatency(flagKey, DateTime.now().difference(start));
+      return FlagEvaluationResult<T>(
+        flagKey: flagKey,
+        value: defaultValue,
+        reason: 'ERROR',
+        errorCode: ErrorCode.GENERAL,
+        errorMessage: _sanitizeError(error),
+        evaluatedAt: DateTime.now(),
+        evaluatorId: 'IntelliToggle',
+      );
+    }
   }
-}
 
 
   /// Test connection to IntelliToggle API health endpoint
   Future<void> _testConnection() async {
+    final token = await _getAccessToken();
     final response = await _httpClient
         .get(
           _options.baseUri.resolve('/health'),
-          headers: _utils.buildHeaders(_sdkKey),
+          headers: _utils.buildHeaders(token, tenantId: _tenantId),
         )
         .timeout(_options.timeout);
 
@@ -306,7 +339,11 @@ Future<FlagEvaluationResult<T>> _evaluateFlag<T>(
     _pollingTimer = Timer.periodic(_options.pollingInterval, (_) async {
       try {
         // Check if configuration has changed
-        final hasChanges = await _utils.checkForChanges(_sdkKey);
+        final token = await _getAccessToken();
+        final hasChanges = await _utils.checkForChanges(
+          token,
+          tenantId: _tenantId,
+        );
         if (hasChanges) {
           // Emit configuration change event
           _eventEmitter.emit(IntelliToggleEvent.configurationChanged());
@@ -321,16 +358,82 @@ Future<FlagEvaluationResult<T>> _evaluateFlag<T>(
   /// Get event stream for listening to provider lifecycle events
   Stream<IntelliToggleEvent> get events => _eventEmitter.stream;
 
+  Future<String> _getAccessToken() async {
+    if (_cachedAccessToken != null &&
+        _tokenExpiry != null &&
+        DateTime.now().isBefore(_tokenExpiry!.subtract(_tokenLeeway))) {
+      return _cachedAccessToken!;
+    }
+
+    final token = await _requestOAuthToken();
+    _cachedAccessToken = token.value;
+    _tokenExpiry = token.expiresAt;
+    return token.value;
+  }
+
+  Future<_OAuthToken> _requestOAuthToken() async {
+    final credentials = base64Encode(utf8.encode('$_clientId:$_clientSecret'));
+    final body = _formEncode({
+      'grant_type': 'client_credentials',
+      'scope': _oauthScope,
+    });
+
+    final response = await _httpClient
+        .post(
+          _options.baseUri.resolve('/oauth/token'),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': 'Basic $credentials',
+            'X-Tenant-ID': _tenantId,
+          },
+          body: body,
+        )
+        .timeout(_options.timeout);
+
+    if (response.statusCode != 200) {
+      throw AuthenticationException(
+        'OAuth token request failed: ${response.statusCode} - ${_sanitizeError(response.body)}',
+      );
+    }
+
+    final Map<String, dynamic> data = jsonDecode(response.body);
+    final token = data['access_token']?.toString();
+    if (token == null || token.isEmpty) {
+      throw AuthenticationException('OAuth response missing access_token');
+    }
+    final expiresIn = (data['expires_in'] as num?)?.toInt() ?? 3600;
+    final expiresAt = DateTime.now().add(Duration(seconds: expiresIn));
+
+    return _OAuthToken(token, expiresAt);
+  }
+
+  String _formEncode(Map<String, String> values) {
+    return values.entries
+        .map(
+          (entry) =>
+              '${Uri.encodeQueryComponent(entry.key)}=${Uri.encodeQueryComponent(entry.value)}',
+        )
+        .join('&');
+  }
+
   String _sanitizeError(dynamic error) {
     // Remove sensitive info and format error message
     final msg = error?.toString() ?? 'Unknown error';
-    if (msg.contains(_sdkKey)) {
-      return 'An error occurred (details hidden for security)';
+    var sanitized = msg;
+    for (final secret in [_clientSecret, _cachedAccessToken]) {
+      if (secret != null && secret.isNotEmpty) {
+        sanitized = sanitized.replaceAll(secret, '[REDACTED]');
+      }
     }
-    // Remove Bearer tokens and other secrets
-    return msg.replaceAll(_sdkKey, '[REDACTED]').replaceAll(RegExp(r'Bearer [^\s]+'), '[REDACTED]');
+    return sanitized.replaceAll(RegExp(r'Bearer [^\s]+'), '[REDACTED]');
   }
 
   @override
   String get name => 'IntelliToggle';
+}
+
+class _OAuthToken {
+  final String value;
+  final DateTime expiresAt;
+  _OAuthToken(this.value, this.expiresAt);
 }
