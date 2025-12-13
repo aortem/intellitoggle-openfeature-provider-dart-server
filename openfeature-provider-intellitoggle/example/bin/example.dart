@@ -5,11 +5,14 @@ import 'package:openfeature_dart_server_sdk/hooks.dart';
 Future<void> main() async {
   // 1. Configure and register the provider
   final provider = IntelliToggleProvider(
-    sdkKey: 'YOUR_SDK_KEY',
+    clientId: 'YOUR_CLIENT_ID',
+    clientSecret: 'YOUR_CLIENT_SECRET',
+    tenantId: 'YOUR_TENANT_ID',
     options: IntelliToggleOptions(
       baseUri: Uri.parse('https://api.intellitoggle.com'),
       timeout: const Duration(seconds: 5),
-    ),  );
+    ),
+  );
   final api = OpenFeatureAPI();
   api.setProvider(provider);
 

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:openfeature_dart_server_sdk/feature_provider.dart';
 import 'events.dart';
 
-// NO-OP change
+
 /// An in-memory feature flag provider for testing and local development.
 ///
 /// This provider allows you to set, update, and remove feature flags at runtime,
@@ -88,9 +88,6 @@ class InMemoryProvider implements FeatureProvider {
     _emitConfigChanged(previous);
   }
 
-  /// Returns true if a flag with [key] exists in the provider.
-  bool hasFlag(String key) => _flags.containsKey(key);
-
   /// Emit a PROVIDER_CONFIGURATION_CHANGED event to listeners.
   /// The event includes the union of the previous and new key sets.
   void _emitConfigChanged(Set<String> previousKeys) {
@@ -148,9 +145,7 @@ class InMemoryProvider implements FeatureProvider {
         value: defaultValue,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
-        // Treat missing flag as an error to satisfy hooks.feature expectations
-        reason: 'ERROR',
-        errorCode: ErrorCode.FLAG_NOT_FOUND,
+        reason: 'DEFAULT',
       );
     }
     if (value is! bool) {
@@ -160,7 +155,6 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
-        errorCode: ErrorCode.TYPE_MISMATCH,
       );
     }
     return FlagEvaluationResult<bool>(
@@ -188,8 +182,7 @@ class InMemoryProvider implements FeatureProvider {
         value: defaultValue,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
-        reason: 'ERROR',
-        errorCode: ErrorCode.FLAG_NOT_FOUND,
+        reason: 'DEFAULT',
       );
     }
     if (value is! String) {
@@ -199,7 +192,6 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
-        errorCode: ErrorCode.TYPE_MISMATCH,
       );
     }
     return FlagEvaluationResult<String>(
@@ -227,8 +219,7 @@ class InMemoryProvider implements FeatureProvider {
         value: defaultValue,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
-        reason: 'ERROR',
-        errorCode: ErrorCode.FLAG_NOT_FOUND,
+        reason: 'DEFAULT',
       );
     }
     if (value is! int) {
@@ -238,7 +229,6 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
-        errorCode: ErrorCode.TYPE_MISMATCH,
       );
     }
     return FlagEvaluationResult<int>(
@@ -266,8 +256,7 @@ class InMemoryProvider implements FeatureProvider {
         value: defaultValue,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
-        reason: 'ERROR',
-        errorCode: ErrorCode.FLAG_NOT_FOUND,
+        reason: 'DEFAULT',
       );
     }
     if (value is! double) {
@@ -277,7 +266,6 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
-        errorCode: ErrorCode.TYPE_MISMATCH,
       );
     }
     return FlagEvaluationResult<double>(
@@ -305,8 +293,7 @@ class InMemoryProvider implements FeatureProvider {
         value: defaultValue,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
-        reason: 'ERROR',
-        errorCode: ErrorCode.FLAG_NOT_FOUND,
+        reason: 'DEFAULT',
       );
     }
     if (value is! Map<String, dynamic>) {
@@ -316,7 +303,6 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
-        errorCode: ErrorCode.TYPE_MISMATCH,
       );
     }
     return FlagEvaluationResult<Map<String, dynamic>>(
@@ -327,6 +313,7 @@ class InMemoryProvider implements FeatureProvider {
       reason: 'STATIC',
     );
   }
+
   /// Evaluate a stored value which may be either static or a callback
   /// receiving the evaluation context and returning the value.
   dynamic _evaluateValue(dynamic raw, Map<String, dynamic>? context) {
