@@ -21,9 +21,9 @@ Add to your server-side Dart project:
 
 ```yaml
 dependencies:
-  openfeature_dart_server_sdk: ^0.1.0
-  openfeature_provider_intellitoggle: ^0.0.2
-````
+  openfeature_dart_server_sdk: ^0.0.13
+  openfeature_provider_intellitoggle: ^0.0.5
+```
 
 Then install:
 
@@ -36,32 +36,89 @@ dart pub get
 ## 🚀 Getting Started
 
 ```dart
-import 'package:openfeature_dart_server_sdk/openfeature_dart_server_sdk.dart';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 
 void main() async {
+  print('Starting IntelliToggle provider with OAuth2 Credentials...\n');
+
   final provider = IntelliToggleProvider(
-    clientId: 'YOUR_INTELLITOGGLE_CLIENT_ID',
-    clientSecret: 'YOUR_INTELLITOGGLE_CLIENT_SECRET',
-    tenantId: 'YOUR_INTELLITOGGLE_TENANT_ID',
-    // Optional: override default scope (defaults to `flags:evaluate`)
-    // oauthScope: 'flags:evaluate projects:read',
+    clientId: "client_id",
+    clientSecret: "cs_secret",
+    tenantId: "tenant_id",
+    options: IntelliToggleOptions(enableLogging: true),
   );
 
-  await OpenFeatureAPI().setProvider(provider);
+  print('Provider created, initializing...\n');
+  await provider.initialize();
+  print('✓ Provider initialized successfully!\n');
 
-  final client = IntelliToggleClient(namespace: 'my-service');
+  final api = OpenFeatureAPI();
+  api.setProvider(provider);
 
-  final enabled = await client.getBooleanValue(
-    'new-dashboard-enabled',
-    false,
-    evaluationContext: {
-      'targetingKey': 'user-123',
-      'role': 'beta_tester',
-    },
+  // Evaluate a boolean flag
+  // result.flagKey, result.value, result.evaluatedAt, result.reason
+  final result = await provider.getBooleanFlag('new-dashboard', false);
+
+  if (result.errorCode != null) {
+    print('✗ Error Code: ${result.errorCode}');
+    print('✗ Error Message: ${result.errorMessage}');
+  } else {
+    print('');
+    print('Flag value: ${result.value}'); // Flag evaluated value
+  }
+  print('');
+
+  await provider.shutdown();
+  print('✓ Test completed successfully!');
+}
+```
+
+---
+
+## 🧪 IntelliToggleClient Test
+
+```dart
+import 'package:openfeature_dart_server_sdk/hooks.dart';
+import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
+
+void main() async {
+  print('Starting IntelliClient test with OAuth2...\n');
+
+  final provider = IntelliToggleProvider(
+    clientId: "client_id",
+    clientSecret: "cs_secret",
+    tenantId: "tenant_id",
+    options: IntelliToggleOptions(
+      enableLogging: true,
+    ),
   );
 
-  print('Feature enabled: $enabled');
+  print('Provider created, initializing...\n');
+  await provider.initialize();
+  print('✓ Provider initialized successfully!\n');
+
+  final api = OpenFeatureAPI();
+  api.setProvider(provider);
+
+  // Create a client
+  final clientMetadata = ClientMetadata(name: 'test-client', version: '0.0.1');
+  final hookManager = HookManager();
+  final defaultEvalContext = EvaluationContext(attributes: {});
+  final featureClient = FeatureClient(
+    metadata: clientMetadata,
+    provider: provider,
+    hookManager: hookManager,
+    defaultContext: defaultEvalContext,
+  );
+  final client = IntelliToggleClient(featureClient);
+
+  // Evaluate your feature flags
+  final newFeatureEnabled = await client.getBooleanValue('new-dashboard-ui', false);
+
+  print('Flag value: ${newFeatureEnabled}');
+
+  await provider.shutdown();
+  print('✓ Test completed successfully!');
 }
 ```
 
@@ -72,62 +129,47 @@ void main() async {
 Use the included `InMemoryProvider` for fast testing without external dependencies:
 
 ```dart
-// Seed initial flags at construction (optional)
-final provider = InMemoryProvider(initialFlags: {
-  'experimental-mode': true,
-  'welcome-text': (Map<String, dynamic> ctx) =>
-      ctx['role'] == 'beta_tester' ? 'Welcome, beta!' : 'Welcome!',
-});
-provider.setFlag('experimental-mode', true);
+import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
+import 'package:openfeature_dart_server_sdk/hooks.dart';
 
-await OpenFeatureAPI().setProvider(provider);
+void main() async {
+  print('Starting IntelliToggle provider test with InMemoryProvider...\n');
 
-final client = IntelliToggleClient(namespace: 'test');
-final enabled = await client.getBooleanValue('experimental-mode', false);
-print('Flag = $enabled'); // true
-```
+  final provider = InMemoryProvider();
 
-Listen for configuration change events (union of previous and new keys is emitted):
+  print('Provider created, initializing...');
+  await provider.initialize();
+  print('✓ Provider initialized successfully!\n');
 
-```dart
-final sub = provider.events.listen((e) {
-  if (e.type == IntelliToggleEventType.configurationChanged) {
-    print('Flags changed: ${e.data?['flagsChanged']}');
-  }
-});
-```
+  final api = OpenFeatureAPI();
+  api.setProvider(provider);
 
-Context-aware flags can be set with a callback:
+  // Create a client
+  final clientMetadata = ClientMetadata(name: 'test-client', version: '0.0.1');
+  final hookManager = HookManager();
+  final defaultEvalContext = EvaluationContext(attributes: {});
+  final featureClient = FeatureClient(
+    metadata: clientMetadata,
+    provider: provider,
+    hookManager: hookManager,
+    defaultContext: defaultEvalContext,
+  );
+  final client = IntelliToggleClient(featureClient);
 
-```dart
-provider.setFlag('is-admin', (Map<String, dynamic> ctx) => ctx['role'] == 'admin');
+  provider.setFlag('bool-flag', true);
+
+  // Evaluate your feature flags
+  final newFeatureEnabled = await client.getBooleanValue('bool-flag', false);
+
+  print('Flag value: $newFeatureEnabled'); // true
+
+  await provider.shutdown();
+  print('✓ Test completed successfully!');
+}
 ```
 
 ---
 
-## 🪵 Console Logging Hook
-
-Log evaluation lifecycle events to stdout. Optionally include the evaluation context for debugging:
-
-`dart
-final hook = ConsoleLoggingHook(printContext: true);
-
-// Add globally
-OpenFeatureAPI().addHooks([hook]);
-
-// Or add to a specific client
-final hookManager = HookManager();
-hookManager.addHook(hook);
-`
-
-Example log entries (JSON):
-
-`
-[OpenFeature] {"stage":"before","domain":"flag_evaluation","provider_name":"InMemoryProvider","flag_key":"new-ui","default_value":false}
-[OpenFeature] {"stage":"after","domain":"flag_evaluation","provider_name":"InMemoryProvider","flag_key":"new-ui","default_value":false,"result":true}
-`
-
----
 ## ⚙️ OREP Server (Optional)
 
 Start a remote flag evaluation API:
@@ -143,19 +185,6 @@ Configure using environment variables:
 | `OREP_PORT`       | `8080`           |
 | `OREP_HOST`       | `0.0.0.0`        |
 | `OREP_AUTH_TOKEN` | `changeme-token` |
-| `OREP_PROVIDER_MODE` | `inmemory` (`intellitoggle` to use remote provider) |
-| `INTELLITOGGLE_CLIENT_ID` | Required when `OREP_PROVIDER_MODE=intellitoggle` |
-| `INTELLITOGGLE_CLIENT_SECRET` | Required when `OREP_PROVIDER_MODE=intellitoggle` |
-| `INTELLITOGGLE_TENANT_ID` | Required when `OREP_PROVIDER_MODE=intellitoggle` |
-| `INTELLITOGGLE_OAUTH_SCOPE` | Optional OAuth scope override (`flags:evaluate`) |
-| `INTELLITOGGLE_ENV` | `production` or `development` |
-
-Example multi-context GET:
-
-```bash
-curl -H "Authorization: Bearer $OREP_AUTH_TOKEN" \
-  "http://localhost:8080/v1/flags/my-flag/evaluate?type=boolean&default=false&context=%7B%22kind%22%3A%22multi%22%2C%22user%22%3A%7B%22targetingKey%22%3A%22user-123%22%7D%2C%22org%22%3A%7B%22targetingKey%22%3A%22org-999%22%7D%7D"
-```
 
 ### OFREP Client (Remote Evaluation)
 
@@ -210,10 +239,10 @@ final result = await client.getBooleanValue(
 
 ## 📚 Resources
 
-* [IntelliToggle Docs](https://intellitoggle.com)
-* [OpenFeature Dart SDK](https://pub.dev/packages/openfeature_dart_server_sdk)
-* [GitHub Repository](https://github.com/aortem/intellitoggle)
-* [OpenFeature Specification](https://openfeature.dev)
+- [IntelliToggle Docs](https://intellitoggle.com)
+- [OpenFeature Dart SDK](https://pub.dev/packages/openfeature_dart_server_sdk)
+- [GitHub Repository](https://github.com/aortem/intellitoggle)
+- [OpenFeature Specification](https://openfeature.dev)
 
 ---
 
@@ -225,30 +254,5 @@ MIT
 
 ---
 
-Let me know if you'd like a `bin/orep_server.dart` usage snippet or an `example/main.dart` to pair with this for pub.dev's [score metrics](https://dart.dev/tools/pub/score).
+Let me know if you'd like a `bin/orep_server.dart` usage snippet or an `example/main.dart` to pair with this for pub.dev’s [score metrics](https://dart.dev/tools/pub/score).
 ```
-
----
-
-## gRPC Server
-
-Start the OFREP gRPC server:
-
-```bash
-dart run bin/ofrep_grpc_server.dart
-```
-
-Environment variables:
-
-| Variable            | Default       |
-| ------------------- | ------------- |
-| `OREP_GRPC_HOST`    | `0.0.0.0`     |
-| `OREP_GRPC_PORT`    | `50051`       |
-| `OREP_AUTH_TOKEN`   | `changeme-token` |
-| `OAUTH_JWT_HS256_SECRET` | (unset) |
-| `OAUTH_EXPECTED_AUD`     | (unset) |
-| `OAUTH_EXPECTED_ISS`     | (unset) |
-
-Set `OREP_PROVIDER_MODE=intellitoggle` plus the same `INTELLITOGGLE_CLIENT_ID` / `INTELLITOGGLE_CLIENT_SECRET` / `INTELLITOGGLE_TENANT_ID` variables (and optional `INTELLITOGGLE_OAUTH_SCOPE`) from the HTTP gateway table when you want the gRPC server to call the real backend.
-
-Protobufs are in `protos/ofrep.proto`. Generated Dart used by the server is vendored under `lib/src/gen/` for convenience.

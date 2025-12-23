@@ -1,10 +1,6 @@
 import 'dart:async';
 import 'package:openfeature_dart_server_sdk/client.dart';
 import 'package:openfeature_dart_server_sdk/evaluation_context.dart';
-import 'package:openfeature_dart_server_sdk/hooks.dart';
-import '../hooks/intellitoggle_telemetry_hook.dart';
-
-
 
 /// Convenience wrapper over OpenFeature client with IntelliToggle-specific methods
 ///
@@ -21,19 +17,22 @@ import '../hooks/intellitoggle_telemetry_hook.dart';
 ///   evaluationContext: {'role': 'admin'},
 /// );
 /// ```
+
+/// New IntelliToggle client with enhanced error handling and timeout support
 class IntelliToggleClient {
   /// The underlying OpenFeature client
   final FeatureClient _client;
 
-  /// Creates a new IntelliToggle client wrapper
-  ///
-  /// [_client] - The OpenFeature FeatureClient to wrap
-  IntelliToggleClient(this._client) {
-    // Register OpenTelemetry hook globally
-    // _hookManager.addHook(IntelliToggleTelemetryHook());
-  }
+  /// Default timeout for flag evaluations
+  Duration _timeout;
 
-  /// Evaluate a boolean flag with enhanced context processing
+  /// Creates a new IntelliToggle client wrapper with corrected endpoints
+  IntelliToggleClient(
+    this._client, {
+    Duration timeout = const Duration(seconds: 10),
+  }) : _timeout = timeout;
+
+  /// Evaluate a boolean flag with enhanced context processing and timeout
   ///
   /// [flagKey] - The feature flag key to evaluate
   /// [defaultValue] - Default value to return if evaluation fails
@@ -61,15 +60,15 @@ class IntelliToggleClient {
       name: name,
       privateAttributes: privateAttributes,
     );
-    // Add timeout to all async calls
-    return await _client.getBooleanFlag(
-      flagKey,
-      context: context,
-      defaultValue: defaultValue,
-    ).timeout(const Duration(seconds: 10));
+
+    final result = await _client
+        .getBooleanFlag(flagKey, context: context, defaultValue: defaultValue)
+        .timeout(_timeout);
+
+    return result;
   }
 
-  /// Evaluate a string flag with enhanced context processing
+  /// Evaluate a string flag with enhanced context processing and timeout
   Future<String> getStringValue(
     String flagKey,
     String defaultValue, {
@@ -88,15 +87,15 @@ class IntelliToggleClient {
       name: name,
       privateAttributes: privateAttributes,
     );
-    // Add timeout to all async calls
-    return await _client.getStringFlag(
-      flagKey,
-      context: context,
-      defaultValue: defaultValue,
-    ).timeout(const Duration(seconds: 10));
+
+    final result = await _client
+        .getStringFlag(flagKey, context: context, defaultValue: defaultValue)
+        .timeout(_timeout);
+
+    return result;
   }
 
-  /// Evaluate an integer flag with enhanced context processing
+  /// Evaluate an integer flag with enhanced context processing and timeout
   Future<int> getIntegerValue(
     String flagKey,
     int defaultValue, {
@@ -115,15 +114,15 @@ class IntelliToggleClient {
       name: name,
       privateAttributes: privateAttributes,
     );
-    // Add timeout to all async calls
-    return await _client.getIntegerFlag(
-      flagKey,
-      context: context,
-      defaultValue: defaultValue,
-    ).timeout(const Duration(seconds: 10));
+
+    final result = await _client
+        .getIntegerFlag(flagKey, context: context, defaultValue: defaultValue)
+        .timeout(_timeout);
+
+    return result;
   }
 
-  /// Evaluate a double flag with enhanced context processing
+  /// Evaluate a double flag with enhanced context processing and timeout
   Future<double> getDoubleValue(
     String flagKey,
     double defaultValue, {
@@ -142,17 +141,15 @@ class IntelliToggleClient {
       name: name,
       privateAttributes: privateAttributes,
     );
-    // Add timeout to all async calls
-    return await _client.getDoubleFlag(
-      flagKey,
-      context: context,
-      defaultValue: defaultValue,
-    ).timeout(const Duration(seconds: 10));
+
+    final result = await _client
+        .getDoubleFlag(flagKey, context: context, defaultValue: defaultValue)
+        .timeout(_timeout);
+
+    return result;
   }
 
-  /// Evaluate an object flag with enhanced context processing
-  ///
-  /// Returns a Map<String, dynamic> object based on flag configuration
+  /// Evaluate an object flag with enhanced context processing and timeout
   Future<Map<String, dynamic>> getObjectValue(
     String flagKey,
     Map<String, dynamic> defaultValue, {
@@ -171,12 +168,12 @@ class IntelliToggleClient {
       name: name,
       privateAttributes: privateAttributes,
     );
-    // Add timeout to all async calls
-    return await _client.getObjectFlag(
-      flagKey,
-      context: context,
-      defaultValue: defaultValue,
-    ).timeout(const Duration(seconds: 10));
+
+    final result = await _client
+        .getObjectFlag(flagKey, context: context, defaultValue: defaultValue)
+        .timeout(_timeout);
+
+    return result;
   }
 
   /// Build evaluation context from various sources
@@ -200,7 +197,6 @@ class IntelliToggleClient {
   }) {
     final contextMap = Map<String, dynamic>.from(baseContext ?? {});
 
-    // Add direct parameters, overriding base context if provided
     if (targetingKey != null) contextMap['targetingKey'] = targetingKey;
     if (kind != null) contextMap['kind'] = kind;
     if (anonymous != null) contextMap['anonymous'] = anonymous;
@@ -231,12 +227,10 @@ class IntelliToggleClient {
   ) {
     final multiContext = <String, dynamic>{'kind': 'multi'};
 
-    // Validate and add each context kind
     for (final entry in contexts.entries) {
       final contextKind = entry.key;
       final contextData = entry.value;
 
-      // Ensure each context has a targetingKey
       if (!contextData.containsKey('targetingKey')) {
         throw ArgumentError(
           'Context "$contextKind" must contain a targetingKey',
@@ -272,14 +266,11 @@ class IntelliToggleClient {
       'kind': kind,
     };
 
-    // Add optional standard attributes
     if (anonymous != null) contextMap['anonymous'] = anonymous;
     if (name != null) contextMap['name'] = name;
     if (privateAttributes != null && privateAttributes.isNotEmpty) {
       contextMap['privateAttributes'] = privateAttributes;
     }
-
-    // Add custom attributes
     if (customAttributes != null) {
       contextMap.addAll(customAttributes);
     }
@@ -292,4 +283,12 @@ class IntelliToggleClient {
   /// Use this if you need direct access to OpenFeature client methods
   /// that aren't wrapped by IntelliToggleClient
   FeatureClient get underlyingClient => _client;
+
+  /// Set custom timeout for evaluations
+  set timeout(Duration timeout) {
+    _timeout = timeout;
+  }
+
+  /// Get current timeout duration
+  Duration get timeout => _timeout;
 }
