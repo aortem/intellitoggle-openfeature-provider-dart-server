@@ -5,6 +5,7 @@
 
 import 'dart:core' as $core;
 import 'package:protobuf/protobuf.dart' as $pb;
+import 'package:protobuf/src/protobuf/pb_list.dart' as $pb_list;
 import 'package:fixnum/fixnum.dart' as $fixnum;
 
 class Value extends $pb.GeneratedMessage {
@@ -47,7 +48,8 @@ class Value extends $pb.GeneratedMessage {
   @$core.pragma('dart2js:noInline')
   static Value create() => Value._();
   Value createEmptyInstance() => create();
-  static $pb.PbList<Value> createRepeated() => $pb.PbList<Value>();
+  static $pb.PbList<Value> createRepeated() =>
+      $pb_list.newPbList<Value>();
   @$core.pragma('dart2js:noInline')
   static Value getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Value>(create);
   static Value? _defaultInstance;
@@ -147,7 +149,8 @@ class EvaluationRequest extends $pb.GeneratedMessage {
   @$core.pragma('dart2js:noInline')
   static EvaluationRequest create() => EvaluationRequest._();
   EvaluationRequest createEmptyInstance() => create();
-  static $pb.PbList<EvaluationRequest> createRepeated() => $pb.PbList<EvaluationRequest>();
+  static $pb.PbList<EvaluationRequest> createRepeated() =>
+      $pb_list.newPbList<EvaluationRequest>();
   @$core.pragma('dart2js:noInline')
   static EvaluationRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EvaluationRequest>(create);
   static EvaluationRequest? _defaultInstance;
@@ -213,7 +216,8 @@ class EvaluationResponse extends $pb.GeneratedMessage {
   @$core.pragma('dart2js:noInline')
   static EvaluationResponse create() => EvaluationResponse._();
   EvaluationResponse createEmptyInstance() => create();
-  static $pb.PbList<EvaluationResponse> createRepeated() => $pb.PbList<EvaluationResponse>();
+  static $pb.PbList<EvaluationResponse> createRepeated() =>
+      $pb_list.newPbList<EvaluationResponse>();
   @$core.pragma('dart2js:noInline')
   static EvaluationResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EvaluationResponse>(create);
   static EvaluationResponse? _defaultInstance;
