@@ -3,7 +3,7 @@ description: E2E (Gherkin) test harness for IntelliToggle OpenFeature provider.
 publish_to: "none"
 
 environment:
-  sdk: ^3.10.3
+  sdk: ">=3.9.4 <4.0.0"
 
 dependencies:
   # Path dependency to the actual provider package
