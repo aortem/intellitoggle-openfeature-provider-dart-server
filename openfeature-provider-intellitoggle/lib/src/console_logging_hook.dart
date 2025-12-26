@@ -79,9 +79,7 @@ class ConsoleLoggingHook extends Hook {
   String _providerName(HookContext context) {
     try {
       final md = context.metadata;
-      if (md is Map<String, dynamic>) {
-        return (md['providerName'] ?? md['provider_name'] ?? md['provider'] ?? 'unknown').toString();
-      }
+      return (md['providerName'] ?? md['provider_name'] ?? md['provider'] ?? 'unknown').toString();
     } catch (_) {}
     return 'unknown';
   }

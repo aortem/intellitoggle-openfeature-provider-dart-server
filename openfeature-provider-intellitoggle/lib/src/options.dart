@@ -195,7 +195,6 @@ class IntelliToggleOptions {
   /// - OFREP_MAX_RETRIES: integer
   /// - OFREP_CACHE_TTL_MS: integer
   factory IntelliToggleOptions.fromEnvironment() {
-    final env = const String.fromEnvironment('DART_DEFINE'); // no-op in VM
     // Use Platform.environment at runtime
     final Map<String, String> e = Platform.environment;
     final enabled = (e['OFREP_ENABLED'] ?? '').toLowerCase() == 'true';

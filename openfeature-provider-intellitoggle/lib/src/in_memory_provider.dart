@@ -17,9 +17,6 @@ class InMemoryProvider implements FeatureProvider {
   /// Values may be static or context-derived via callbacks.
   final Map<String, dynamic> _flags = {};
 
-  /// Track previous key-set to compute union for change events
-  Set<String> _lastKeys = <String>{};
-
   /// Track all keys ever seen since initialization to satisfy
   /// union-of-all-previous-and-new-keys semantics in change events.
   Set<String> _seenKeys = <String>{};
@@ -32,7 +29,6 @@ class InMemoryProvider implements FeatureProvider {
   InMemoryProvider({Map<String, dynamic>? initialFlags}) {
     if (initialFlags != null) {
       _flags.addAll(initialFlags);
-      _lastKeys = Set<String>.from(_flags.keys);
       _seenKeys = Set<String>.from(_flags.keys);
     }
   }
@@ -99,7 +95,6 @@ class InMemoryProvider implements FeatureProvider {
     // field reflects a union of all previous and new keys, even across
     // multiple sequential updates.
     _seenKeys = <String>{..._seenKeys, ...previousKeys, ...currentKeys};
-    _lastKeys = currentKeys;
     _eventController.add(IntelliToggleEvent.configurationChanged(_seenKeys.toList()));
   }
 

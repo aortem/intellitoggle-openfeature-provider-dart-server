@@ -19,9 +19,7 @@ class OfrepService extends ofrepgrpc.OfrepServiceBase {
   final String apiKey;
 
   OfrepService(this.provider, this.apiKey)
-    : inMemoryProvider = provider is InMemoryProvider
-          ? provider as InMemoryProvider
-          : null;
+    : inMemoryProvider = provider is InMemoryProvider ? provider : null;
 
   @override
   Future<ofrep.EvaluationResponse> getEvaluation(

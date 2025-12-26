@@ -53,9 +53,7 @@ Future<FeatureProvider> _createProvider() async {
 
 Future<void> main() async {
   final provider = await _createProvider();
-  final inMemory = provider is InMemoryProvider
-      ? provider as InMemoryProvider
-      : null;
+  final inMemory = provider is InMemoryProvider ? provider : null;
 
   final host = Platform.environment['OREP_HOST'] ?? '0.0.0.0';
   final port =
