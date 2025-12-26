@@ -1,4 +1,0 @@
-[submodule "vendor/openfeature-spec"]
-	path = vendor/openfeature-spec
-	url = https://github.com/open-feature/spec.git
-	branch = main
