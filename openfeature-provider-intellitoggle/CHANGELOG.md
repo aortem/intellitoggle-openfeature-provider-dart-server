@@ -1,3 +1,20 @@
+
+## 0.0.6
+
+### Added
+
+* Added local execution support for running the OpenFeature provider server during tests.
+* Added improved error handling and coverage for evaluation failures.
+* Added initial tracing and metrics hooks for feature flag evaluation flows.
+* Added additional test coverage for provider lifecycle and error scenarios.
+
+### Changed
+
+* Improved provider initialization and shutdown handling.
+* Refactored test setup to better reflect real-world provider usage.
+* Updated README with clearer local usage and testing instructions.
+
+
 ## 0.0.5
 
 ### Changed
