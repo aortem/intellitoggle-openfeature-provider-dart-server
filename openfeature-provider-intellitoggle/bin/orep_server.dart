@@ -5,7 +5,6 @@ import 'package:jwt_generator/jwt_generator.dart';
 import 'package:openfeature_dart_server_sdk/feature_provider.dart'
     hide InMemoryProvider;
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
-import 'package:openfeature_provider_intellitoggle/src/context.dart';
 
 final IntelliToggleContextProcessor _contextProcessor =
     IntelliToggleContextProcessor();
@@ -17,7 +16,6 @@ Future<FeatureProvider> _createProvider() async {
     final clientId = Platform.environment['INTELLITOGGLE_CLIENT_ID'];
     final clientSecret = Platform.environment['INTELLITOGGLE_CLIENT_SECRET'];
     final tenantId = Platform.environment['INTELLITOGGLE_TENANT_ID'];
-    final scope = Platform.environment['INTELLITOGGLE_OAUTH_SCOPE'];
     if (clientId == null ||
         clientSecret == null ||
         tenantId == null ||
@@ -37,7 +35,6 @@ Future<FeatureProvider> _createProvider() async {
       clientId: clientId,
       clientSecret: clientSecret,
       tenantId: tenantId,
-      oauthScope: scope,
       options: options,
     );
     await provider.initialize();
@@ -56,9 +53,7 @@ Future<FeatureProvider> _createProvider() async {
 
 Future<void> main() async {
   final provider = await _createProvider();
-  final inMemory = provider is InMemoryProvider
-      ? provider as InMemoryProvider
-      : null;
+  final inMemory = provider is InMemoryProvider ? provider : null;
 
   final host = Platform.environment['OREP_HOST'] ?? '0.0.0.0';
   final port =

@@ -14,7 +14,6 @@ Future<FeatureProvider> _createProvider() async {
     final clientId = Platform.environment['INTELLITOGGLE_CLIENT_ID'];
     final clientSecret = Platform.environment['INTELLITOGGLE_CLIENT_SECRET'];
     final tenantId = Platform.environment['INTELLITOGGLE_TENANT_ID'];
-    final scope = Platform.environment['INTELLITOGGLE_OAUTH_SCOPE'];
     if (clientId == null ||
         clientSecret == null ||
         tenantId == null ||
@@ -34,7 +33,6 @@ Future<FeatureProvider> _createProvider() async {
       clientId: clientId,
       clientSecret: clientSecret,
       tenantId: tenantId,
-      oauthScope: scope,
       options: options,
     );
     await provider.initialize();
@@ -58,7 +56,7 @@ Future<void> main() async {
       int.tryParse(Platform.environment['OREP_GRPC_PORT'] ?? '50051') ?? 50051;
   final apiKey = Platform.environment['OREP_AUTH_TOKEN'] ?? 'changeme-token';
 
-  final server = Server([OfrepService(provider, apiKey)]);
+  final server = Server.create(services: [OfrepService(provider, apiKey)]);
   await server.serve(address: host, port: port);
   print('OFREP gRPC server running on $host:$port');
 }

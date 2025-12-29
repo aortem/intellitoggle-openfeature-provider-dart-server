@@ -235,9 +235,9 @@ class IntelliToggleProvider implements FeatureProvider {
           case 'object':
             if (rawValue is Map<String, dynamic>) {
               value = rawValue as T;
-            } else if (rawValue is Map) {
-              value = Map<String, dynamic>.from(rawValue as Map) as T;
-            } else {
+          } else if (rawValue is Map) {
+            value = Map<String, dynamic>.from(rawValue) as T;
+          } else {
               throw TypeMismatchException('Expected object');
             }
             break;
