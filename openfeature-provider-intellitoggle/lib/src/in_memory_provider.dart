@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:openfeature_dart_server_sdk/feature_provider.dart';
 import 'events.dart';
 
+// NO-OP change
 /// An in-memory feature flag provider for testing and local development.
 ///
 /// This provider allows you to set, update, and remove feature flags at runtime,
@@ -13,7 +14,24 @@ import 'events.dart';
 /// is emitted via the [events] stream.
 class InMemoryProvider implements FeatureProvider {
   /// Internal map storing flag keys and their values.
+  /// Values may be static or context-derived via callbacks.
   final Map<String, dynamic> _flags = {};
+
+  /// Track all keys ever seen since initialization to satisfy
+  /// union-of-all-previous-and-new-keys semantics in change events.
+  Set<String> _seenKeys = <String>{};
+
+  /// Optional constructor to pre-seed flags.
+  ///
+  /// [initialFlags] keys are the flag keys. Values can be concrete values or
+  /// callbacks of the form `(Map<String, dynamic> context) => value` to support
+  /// context-aware evaluation.
+  InMemoryProvider({Map<String, dynamic>? initialFlags}) {
+    if (initialFlags != null) {
+      _flags.addAll(initialFlags);
+      _seenKeys = Set<String>.from(_flags.keys);
+    }
+  }
 
   /// Stream controller for emitting provider events.
   final StreamController<IntelliToggleEvent> _eventController =
@@ -43,29 +61,41 @@ class InMemoryProvider implements FeatureProvider {
   /// [key] is the flag key, [value] is the flag value (any type).
   /// Emits a configuration changed event.
   void setFlag(String key, dynamic value) {
+    final previous = Set<String>.from(_flags.keys);
     _flags[key] = value;
-    _emitConfigChanged();
+    _emitConfigChanged(previous);
   }
 
   /// Remove a flag by key.
   ///
   /// Emits a configuration changed event.
   void removeFlag(String key) {
+    final previous = Set<String>.from(_flags.keys);
     _flags.remove(key);
-    _emitConfigChanged();
+    _emitConfigChanged(previous);
   }
 
   /// Clear all flags.
   ///
   /// Emits a configuration changed event.
   void clearFlags() {
+    final previous = Set<String>.from(_flags.keys);
     _flags.clear();
-    _emitConfigChanged();
+    _emitConfigChanged(previous);
   }
 
+  /// Returns true if a flag with [key] exists in the provider.
+  bool hasFlag(String key) => _flags.containsKey(key);
+
   /// Emit a PROVIDER_CONFIGURATION_CHANGED event to listeners.
-  void _emitConfigChanged() {
-    _eventController.add(IntelliToggleEvent.configurationChanged(_flags.keys.toList()));
+  /// The event includes the union of the previous and new key sets.
+  void _emitConfigChanged(Set<String> previousKeys) {
+    final currentKeys = Set<String>.from(_flags.keys);
+    // Maintain cumulative set of all keys seen to ensure the flagsChanged
+    // field reflects a union of all previous and new keys, even across
+    // multiple sequential updates.
+    _seenKeys = <String>{..._seenKeys, ...previousKeys, ...currentKeys};
+    _eventController.add(IntelliToggleEvent.configurationChanged(_seenKeys.toList()));
   }
 
   /// Listen to provider events (e.g., configuration changed).
@@ -106,14 +136,16 @@ class InMemoryProvider implements FeatureProvider {
     bool defaultValue, {
     Map<String, dynamic>? context,
   }) async {
-    final value = _flags[flagKey];
+    final value = _evaluateValue(_flags[flagKey], context);
     if (!_flags.containsKey(flagKey)) {
       return FlagEvaluationResult<bool>(
         flagKey: flagKey,
         value: defaultValue,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
-        reason: 'DEFAULT',
+        // Treat missing flag as an error to satisfy hooks.feature expectations
+        reason: 'ERROR',
+        errorCode: ErrorCode.FLAG_NOT_FOUND,
       );
     }
     if (value is! bool) {
@@ -123,6 +155,7 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
+        errorCode: ErrorCode.TYPE_MISMATCH,
       );
     }
     return FlagEvaluationResult<bool>(
@@ -143,14 +176,15 @@ class InMemoryProvider implements FeatureProvider {
     String defaultValue, {
     Map<String, dynamic>? context,
   }) async {
-    final value = _flags[flagKey];
+    final value = _evaluateValue(_flags[flagKey], context);
     if (!_flags.containsKey(flagKey)) {
       return FlagEvaluationResult<String>(
         flagKey: flagKey,
         value: defaultValue,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
-        reason: 'DEFAULT',
+        reason: 'ERROR',
+        errorCode: ErrorCode.FLAG_NOT_FOUND,
       );
     }
     if (value is! String) {
@@ -160,6 +194,7 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
+        errorCode: ErrorCode.TYPE_MISMATCH,
       );
     }
     return FlagEvaluationResult<String>(
@@ -180,14 +215,15 @@ class InMemoryProvider implements FeatureProvider {
     int defaultValue, {
     Map<String, dynamic>? context,
   }) async {
-    final value = _flags[flagKey];
+    final value = _evaluateValue(_flags[flagKey], context);
     if (!_flags.containsKey(flagKey)) {
       return FlagEvaluationResult<int>(
         flagKey: flagKey,
         value: defaultValue,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
-        reason: 'DEFAULT',
+        reason: 'ERROR',
+        errorCode: ErrorCode.FLAG_NOT_FOUND,
       );
     }
     if (value is! int) {
@@ -197,6 +233,7 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
+        errorCode: ErrorCode.TYPE_MISMATCH,
       );
     }
     return FlagEvaluationResult<int>(
@@ -217,14 +254,15 @@ class InMemoryProvider implements FeatureProvider {
     double defaultValue, {
     Map<String, dynamic>? context,
   }) async {
-    final value = _flags[flagKey];
+    final value = _evaluateValue(_flags[flagKey], context);
     if (!_flags.containsKey(flagKey)) {
       return FlagEvaluationResult<double>(
         flagKey: flagKey,
         value: defaultValue,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
-        reason: 'DEFAULT',
+        reason: 'ERROR',
+        errorCode: ErrorCode.FLAG_NOT_FOUND,
       );
     }
     if (value is! double) {
@@ -234,6 +272,7 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
+        errorCode: ErrorCode.TYPE_MISMATCH,
       );
     }
     return FlagEvaluationResult<double>(
@@ -254,14 +293,15 @@ class InMemoryProvider implements FeatureProvider {
     Map<String, dynamic> defaultValue, {
     Map<String, dynamic>? context,
   }) async {
-    final value = _flags[flagKey];
+    final value = _evaluateValue(_flags[flagKey], context);
     if (!_flags.containsKey(flagKey)) {
       return FlagEvaluationResult<Map<String, dynamic>>(
         flagKey: flagKey,
         value: defaultValue,
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
-        reason: 'DEFAULT',
+        reason: 'ERROR',
+        errorCode: ErrorCode.FLAG_NOT_FOUND,
       );
     }
     if (value is! Map<String, dynamic>) {
@@ -271,6 +311,7 @@ class InMemoryProvider implements FeatureProvider {
         evaluatedAt: DateTime.now(),
         evaluatorId: name,
         reason: 'ERROR',
+        errorCode: ErrorCode.TYPE_MISMATCH,
       );
     }
     return FlagEvaluationResult<Map<String, dynamic>>(
@@ -280,5 +321,20 @@ class InMemoryProvider implements FeatureProvider {
       evaluatorId: name,
       reason: 'STATIC',
     );
+  }
+  /// Evaluate a stored value which may be either static or a callback
+  /// receiving the evaluation context and returning the value.
+  dynamic _evaluateValue(dynamic raw, Map<String, dynamic>? context) {
+    if (raw is Function) {
+      try {
+        final ctx = context ?? const <String, dynamic>{};
+        // Try calling with one positional argument (context)
+        return Function.apply(raw, [ctx]);
+      } catch (_) {
+        // If function arity/type mismatch, fall through; callers will type-check
+        return null;
+      }
+    }
+    return raw;
   }
 }

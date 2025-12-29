@@ -1,3 +1,5 @@
+import 'dart:io';
+
 /// Configuration options for the IntelliToggle provider
 ///
 /// Defines connection settings, timeouts, polling behavior, and other
@@ -58,6 +60,15 @@ class IntelliToggleOptions {
   /// User agent string for HTTP requests
   final String userAgent;
 
+  /// Enable OFREP remote evaluation protocol
+  final bool useOfrep;
+
+  /// Base URI for OFREP endpoint when [useOfrep] is true
+  final Uri? ofrepBaseUri;
+
+  /// Optional OFREP-specific auth token; falls back to provider credentials
+  final String? ofrepAuthToken;
+
   /// Creates a new IntelliToggleOptions instance
   ///
   /// All parameters are optional and have sensible defaults for production use.
@@ -74,6 +85,9 @@ class IntelliToggleOptions {
     Duration? initializationTimeout,
     Duration? cacheTtl,
     String? userAgent,
+    bool? useOfrep,
+    Uri? ofrepBaseUri,
+    String? ofrepAuthToken,
   }) : baseUri = baseUri ?? Uri.parse('https://api.intellitoggle.com'),
        timeout = timeout ?? const Duration(seconds: 10),
        headers = headers ?? const {},
@@ -86,7 +100,10 @@ class IntelliToggleOptions {
        initializationTimeout =
            initializationTimeout ?? const Duration(seconds: 30),
        cacheTtl = cacheTtl ?? Duration.zero,
-       userAgent = userAgent ?? 'IntelliToggle-Dart-SDK/1.0.0';
+       userAgent = userAgent ?? 'IntelliToggle-Dart-SDK/1.0.0',
+       useOfrep = useOfrep ?? false,
+       ofrepBaseUri = ofrepBaseUri,
+       ofrepAuthToken = ofrepAuthToken;
 
   /// Create a copy of this options object with modified values
   ///
@@ -104,6 +121,9 @@ class IntelliToggleOptions {
     Duration? initializationTimeout,
     Duration? cacheTtl,
     String? userAgent,
+    bool? useOfrep,
+    Uri? ofrepBaseUri,
+    String? ofrepAuthToken,
   }) {
     return IntelliToggleOptions(
       baseUri: baseUri ?? this.baseUri,
@@ -119,6 +139,9 @@ class IntelliToggleOptions {
           initializationTimeout ?? this.initializationTimeout,
       cacheTtl: cacheTtl ?? this.cacheTtl,
       userAgent: userAgent ?? this.userAgent,
+      useOfrep: useOfrep ?? this.useOfrep,
+      ofrepBaseUri: ofrepBaseUri ?? this.ofrepBaseUri,
+      ofrepAuthToken: ofrepAuthToken ?? this.ofrepAuthToken,
     );
   }
 
@@ -162,6 +185,34 @@ class IntelliToggleOptions {
     );
   }
 
+  /// Build options from environment variables. Intended for ops-driven config.
+  ///
+  /// Supported keys:
+  /// - OFREP_ENABLED: 'true' to enable OFREP
+  /// - OFREP_BASE_URL: e.g. https://ofrep.example.com
+  /// - OFREP_AUTH_TOKEN: bearer token (if different from credentials)
+  /// - OFREP_TIMEOUT_MS: request timeout in ms
+  /// - OFREP_MAX_RETRIES: integer
+  /// - OFREP_CACHE_TTL_MS: integer
+  factory IntelliToggleOptions.fromEnvironment() {
+    // Use Platform.environment at runtime
+    final Map<String, String> e = Platform.environment;
+    final enabled = (e['OFREP_ENABLED'] ?? '').toLowerCase() == 'true';
+    final base = e['OFREP_BASE_URL'];
+    final token = e['OFREP_AUTH_TOKEN'];
+    final timeoutMs = int.tryParse(e['OFREP_TIMEOUT_MS'] ?? '');
+    final retries = int.tryParse(e['OFREP_MAX_RETRIES'] ?? '');
+    final cacheMs = int.tryParse(e['OFREP_CACHE_TTL_MS'] ?? '');
+    return IntelliToggleOptions(
+      useOfrep: enabled,
+      ofrepBaseUri: base != null && base.isNotEmpty ? Uri.parse(base) : null,
+      ofrepAuthToken: token,
+      timeout: timeoutMs != null ? Duration(milliseconds: timeoutMs) : null,
+      maxRetries: retries,
+      cacheTtl: cacheMs != null ? Duration(milliseconds: cacheMs) : null,
+    );
+  }
+
   /// In-memory cache for flag evaluations (bounded by cacheTtl)
   final Map<String, dynamic> _flagCache = {};
   dynamic getCachedFlag(String cacheKey) {
@@ -171,6 +222,7 @@ class IntelliToggleOptions {
     }
     return null;
   }
+
   void setCachedFlag(String cacheKey, dynamic value, Duration ttl) {
     if (ttl > Duration.zero) {
       _flagCache[cacheKey] = {
@@ -179,6 +231,7 @@ class IntelliToggleOptions {
       };
     }
   }
+
   void clearFlagCache() {
     _flagCache.clear();
   }

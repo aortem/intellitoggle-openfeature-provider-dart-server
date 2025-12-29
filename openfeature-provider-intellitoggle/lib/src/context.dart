@@ -12,13 +12,25 @@ class IntelliToggleContextProcessor {
   /// Returns processed context ready for API transmission
   /// Throws [ArgumentError] for invalid context data
   Map<String, dynamic> processContext(Map<String, dynamic>? context) {
+    // Allow null or empty context
     if (context == null || context.isEmpty) {
-      throw ArgumentError('Context cannot be null or empty');
+      return {
+        'kind': 'single',
+        'contextKind': 'user',
+        'attributes': {'targetingKey': 'anonymous', 'anonymous': true},
+        'targetingKey': 'anonymous',
+        'anonymous': true,
+        'privateAttributes': [],
+      };
     }
+
+    // Existing logic for normal context
     final processedContext = Map<String, dynamic>.from(context);
     _validateTargetingKey(processedContext);
+
     final kind = processedContext['kind'] as String? ?? 'user';
     processedContext['kind'] = kind;
+
     if (kind == 'multi') {
       return _processMultiContext(processedContext);
     } else {
@@ -81,7 +93,8 @@ class IntelliToggleContextProcessor {
   /// Returns cleaned and validated attributes
   Map<String, dynamic> _extractContextAttributes(Map<String, dynamic> context) {
     final attributes = Map<String, dynamic>.from(context);
-    if (attributes.containsKey('key') && !attributes.containsKey('targetingKey')) {
+    if (attributes.containsKey('key') &&
+        !attributes.containsKey('targetingKey')) {
       attributes['targetingKey'] = attributes['key'];
     }
     attributes.remove('key');
@@ -101,7 +114,10 @@ class IntelliToggleContextProcessor {
     attributes.forEach((key, value) {
       final safeKey = key.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '');
       if (value is String) {
-        sanitized[safeKey] = value.trim().replaceAll(RegExp(r'[\x00-\x1F\x7F]'), '');
+        sanitized[safeKey] = value.trim().replaceAll(
+          RegExp(r'[\x00-\x1F\x7F]'),
+          '',
+        );
       } else if (value is num || value is bool || value == null) {
         sanitized[safeKey] = value;
       }

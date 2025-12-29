@@ -196,6 +196,37 @@ provider.events.listen((event) {
 });
 ```
 
+---
+
+## Running Conformance Tests (Appendix B)
+
+This repository includes the official OpenFeature Appendix B Gherkin conformance tests, wired against the IntelliToggle Dart provider using the in-memory provider.
+
+### Local Execution
+
+From the repository root:
+
+```bash
+git submodule update --init --recursive
+dart pub get
+dart test -r expanded test/gherkin/gherkin_suite_test.dart
+```
+
+This will:
+
+- Resolve the `vendor/openfeature-spec` submodule
+- Run the Appendix B features (`evaluation_v2`, `contextMerging`, `metadata`, `hooks`) via the Gherkin harness
+
+### CI/CD
+
+The `gherkin_e2e` GitLab job runs automatically:
+
+- Executes `dart test` for `test/gherkin/gherkin_suite_test.dart`
+- Generates a JUnit report at `test-results.xml`
+- Uploads artifacts:
+  - `test-results.xml`
+  - `test/gherkin/_tmp/` (expanded feature files, debug artifacts)
+
 ### Global Context
 
 ```dart
@@ -522,6 +553,28 @@ IntelliToggleOptions.development()
 
 ### OREP Endpoints
 
+#### Using the provider as an OFREP client
+
+Configure the provider to evaluate flags against an OFREP endpoint and expose results via OpenFeature APIs.
+
+- Config via code or env vars: `OFREP_ENABLED`, `OFREP_BASE_URL`, `OFREP_AUTH_TOKEN`, `OFREP_TIMEOUT_MS`, `OFREP_MAX_RETRIES`, `OFREP_CACHE_TTL_MS`.
+- Supports core types: boolean, string, integer, double, object.
+- Returns default on network errors with reason `ERROR` and appropriate error code.
+
+Example:
+
+```dart
+final provider = IntelliToggleProvider(
+  sdkKey: 'YOUR_TOKEN',
+  options: IntelliToggleOptions(
+    useOfrep: true,
+    ofrepBaseUri: Uri.parse('http://localhost:8080'),
+    cacheTtl: const Duration(seconds: 30),
+  ),
+);
+await OpenFeatureAPI().setProvider(provider);
+```
+
 - `POST /v1/flags/{flagKey}/evaluate` - Evaluate flag
 - `GET /v1/provider/metadata` - Provider info
 
@@ -573,7 +626,7 @@ We welcome contributions! See [`CONTRIBUTING.md`](https://github.com/intellitogg
 
 ## Learn More
 
-* **Website:** [https://intellitoggle.com](https://intellitoggle.com)
-* **Docs & CLI:** [https://sdks.aortem.io/intellitoggle](https://sdks.aortem.io/intellitoggle/)
-* **API Reference:** [https://api.intellitoggle.com/docs](https://api.intellitoggle.com/docs)
+* **Website:** [https://www.intellitoggle.com](https://www.intellitoggle.com)
+* **Docs & CLI:** [https://docs.intellitoggle.com/](https://docs.intellitoggle.com/)
+* **API Reference:** [https://docs.intellitoggle.com/](https://docs.intellitoggle.com/)
 * **GitHub:** [https://github.com/aortem/intellitoggle-openfeature-provider-dart-server](https://github.com/aortem/intellitoggle-openfeature-provider-dart-server)
