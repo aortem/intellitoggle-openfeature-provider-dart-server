@@ -55,6 +55,33 @@ Set up your environment by:
 2. Installing Dart and any required dependencies.
 3. Following the setup instructions to prepare your development environment.
 
+## Running Tests
+
+Run the full test suite locally with:
+
+```bash
+dart pub get
+dart test
+```
+
+## Updating the OpenFeature Spec Submodule
+
+The Appendix B conformance tests rely on the vendored `openfeature/spec` submodule under `vendor/openfeature-spec`.
+
+To update the spec version:
+
+```bash
+git submodule update --init --recursive
+cd vendor/openfeature-spec
+git fetch origin
+git checkout <desired-ref-or-tag>
+cd ../..
+git add vendor/openfeature-spec
+git commit -m "chore: update openfeature-spec to <ref-or-tag>"
+```
+
+Make sure CI (`gherkin_e2e`) passes after bumping the spec, since new spec versions can introduce additional scenarios or stricter expectations.
+
 ## Pull Request Guidelines
 
 Ensure your pull request adheres to the following:

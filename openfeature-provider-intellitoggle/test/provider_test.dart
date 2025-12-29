@@ -45,6 +45,42 @@ void main() {
       );
       await sub.cancel();
     });
+
+    test('supports initial flags via constructor', () async {
+      final seeded = InMemoryProvider(initialFlags: {
+        'a': true,
+        'b': 'hello',
+      });
+      final br = await seeded.getBooleanFlag('a', false);
+      final sr = await seeded.getStringFlag('b', 'x');
+      expect(br.value, true);
+      expect(sr.value, 'hello');
+    });
+
+    test('supports context-aware callbacks', () async {
+      provider.setFlag('is-admin', (Map<String, dynamic> ctx) => ctx['role'] == 'admin');
+      final r1 = await provider.getBooleanFlag('is-admin', false, context: {'role': 'admin'});
+      final r2 = await provider.getBooleanFlag('is-admin', false, context: {'role': 'user'});
+      expect(r1.value, true);
+      expect(r2.value, false);
+    });
+
+    test('configuration changed emits union of previous and new keys', () async {
+      final events = <IntelliToggleEvent>[];
+      final sub = provider.events.listen(events.add);
+      provider.setFlag('a', 1);
+      provider.setFlag('b', 2);
+      // remove a and add c -> union should be a,b,c
+      provider.removeFlag('a');
+      provider.setFlag('c', 3);
+      await Future.delayed(const Duration(milliseconds: 20));
+      final confEvents = events.where((e) => e.type == IntelliToggleEventType.configurationChanged).toList();
+      expect(confEvents, isNotEmpty);
+      final last = confEvents.last;
+      final changed = (last.data?['flagsChanged'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+      expect(changed.toSet().containsAll({'a','b','c'}), true);
+      await sub.cancel();
+    });
   });
 
   group('ConsoleLoggingHook', () {
@@ -52,9 +88,8 @@ void main() {
     late MockLogger logger;
 
     setUp(() {
-      hook = ConsoleLoggingHook();
+      hook = ConsoleLoggingHook(printContext: true, logger: (m) => logger.log(m));
       logger = MockLogger();
-      hook.logFunction = logger.log;
     });
 
     test('logs before, after, and finally', () async {
@@ -70,27 +105,11 @@ void main() {
 
       await hook.before(context);
       await hook.after(context);
-      await hook.finally_(context);
+      await hook.finally_(context, null);
 
-      expect(
-        logger.messages.any(
-          (m) => m.contains('BEFORE: Evaluating flag "test-flag"'),
-        ),
-        true,
-      );
-      expect(
-        logger.messages.any(
-          (m) => m.contains('AFTER: Flag "test-flag" evaluation completed.'),
-        ),
-        true,
-      );
-      expect(
-        logger.messages.any(
-          (m) =>
-              m.contains('FINALLY: Finished evaluation for flag "test-flag"'),
-        ),
-        true,
-      );
+      expect(logger.messages.any((m) => m.contains('"stage":"before"') && m.contains('"flag_key":"test-flag"')), true);
+      expect(logger.messages.any((m) => m.contains('"stage":"after"') && m.contains('"flag_key":"test-flag"')), true);
+      expect(logger.messages.any((m) => m.contains('"stage":"finally"') && m.contains('"flag_key":"test-flag"')), true);
     });
 
     test('logs error and finally on error', () async {
@@ -106,21 +125,10 @@ void main() {
 
       await hook.before(context);
       await hook.error(context);
-      await hook.finally_(context);
+      await hook.finally_(context, null);
 
-      expect(
-        logger.messages.any(
-          (m) => m.contains('ERROR: Flag "test-flag" evaluation failed.'),
-        ),
-        true,
-      );
-      expect(
-        logger.messages.any(
-          (m) =>
-              m.contains('FINALLY: Finished evaluation for flag "test-flag"'),
-        ),
-        true,
-      );
+      expect(logger.messages.any((m) => m.contains('"stage":"error"') && m.contains('"flag_key":"test-flag"')), true);
+      expect(logger.messages.any((m) => m.contains('"stage":"finally"') && m.contains('"flag_key":"test-flag"')), true);
     });
   });
 }
