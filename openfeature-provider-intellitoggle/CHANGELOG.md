@@ -1,3 +1,22 @@
+## 0.0.7
+
+### Added
+
+* Added stronger validation and guardrails around provider startup configuration.
+* Added expanded tracing spans for flag resolution and provider lifecycle events.
+* Added test helpers to simplify local provider execution in CI and developer environments.
+
+### Changed
+
+* Improved resilience of feature flag evaluation under partial provider failures.
+* Refined metrics emission to reduce noise and improve signal consistency.
+* Simplified test bootstrapping to reduce duplication and improve readability.
+
+### Fixed
+
+* Fixed edge cases where provider shutdown could leave dangling resources in tests.
+* Fixed inconsistent error propagation during failed evaluations.
+
 ## 0.0.6
 
 ### Added
