@@ -7,7 +7,6 @@ void main() {
   final clientId = Platform.environment['INTELLITOGGLE_CLIENT_ID'];
   final clientSecret = Platform.environment['INTELLITOGGLE_CLIENT_SECRET'];
   final tenantId = Platform.environment['INTELLITOGGLE_TENANT_ID'];
-  final scope = Platform.environment['INTELLITOGGLE_OAUTH_SCOPE'];
   final hasClientCredentials =
       clientId != null &&
       clientSecret != null &&
@@ -36,7 +35,6 @@ void main() {
       clientId: clientId!,
       clientSecret: clientSecret!,
       tenantId: tenantId!,
-      oauthScope: scope,
       options: options,
     );
 

@@ -28,5 +28,6 @@ export 'src/utils.dart'
 export 'package:openfeature_dart_server_sdk/open_feature_api.dart';
 export 'package:openfeature_dart_server_sdk/evaluation_context.dart';
 export 'hooks/intellitoggle_telemetry_hook.dart';
-// export 'package:openfeature_dart_server_sdk/feature_provider.dart';
+export 'package:openfeature_dart_server_sdk/feature_provider.dart'
+    hide InMemoryProvider;
 export 'package:openfeature_dart_server_sdk/client.dart';
