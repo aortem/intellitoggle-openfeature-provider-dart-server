@@ -5,7 +5,8 @@ import 'package:openfeature_dart_server_sdk/hooks.dart';
 
 import '../lib/utils/telemetry.dart';
 import '../lib/src/client.dart';
-import '../lib/src/in_memory_provider.dart' as intellitoggle; // Use alias to avoid conflict
+import '../lib/src/in_memory_provider.dart'
+    as intellitoggle; // Use alias to avoid conflict
 import '../lib/hooks/intellitoggle_telemetry_hook.dart';
 
 void main() {
@@ -20,7 +21,7 @@ void main() {
       provider.setFlag('test-flag', true);
 
       final hookManager = HookManager()..addHook(IntelliToggleTelemetryHook());
-      
+
       final featureClient = FeatureClient(
         metadata: ClientMetadata(name: 'test-client'),
         hookManager: hookManager,
@@ -29,13 +30,23 @@ void main() {
       );
 
       final client = IntelliToggleClient(featureClient);
-      
-      await client.getBooleanValue('test-flag', false, evaluationContext: {'targetingKey': 'user-1'});
+
+      await client.getBooleanValue(
+        'test-flag',
+        false,
+        evaluationContext: {'targetingKey': 'user-1'},
+      );
 
       // Verify success metrics
-      expect(Telemetry.metrics.counters['feature_flag.evaluation_count'], equals(1));
-      expect(Telemetry.metrics.counters['feature_flag.evaluation_success_count'], equals(1));
-      
+      expect(
+        Telemetry.metrics.counters['feature_flag.evaluation_count'],
+        equals(1),
+      );
+      expect(
+        Telemetry.metrics.counters['feature_flag.evaluation_success_count'],
+        equals(1),
+      );
+
       // Verify latency was recorded
       expect(Telemetry.metrics.latencyHistogram['test-flag'], isNotEmpty);
     });
@@ -45,7 +56,7 @@ void main() {
       provider.setFlag('my-flag', 'variant-a');
 
       final hookManager = HookManager()..addHook(IntelliToggleTelemetryHook());
-      
+
       final featureClient = FeatureClient(
         metadata: ClientMetadata(name: 'test-client'),
         hookManager: hookManager,
@@ -56,12 +67,19 @@ void main() {
       );
 
       final client = IntelliToggleClient(featureClient);
-      
-      await client.getStringValue('my-flag', 'default', evaluationContext: {'targetingKey': 'user-123'});
+
+      await client.getStringValue(
+        'my-flag',
+        'default',
+        evaluationContext: {'targetingKey': 'user-123'},
+      );
 
       // Note: In a real test, you'd inspect the completed span
       // For now, we verify metrics as a proxy
-      expect(Telemetry.metrics.counters['feature_flag.evaluation_success_count'], equals(1));
+      expect(
+        Telemetry.metrics.counters['feature_flag.evaluation_success_count'],
+        equals(1),
+      );
     });
   });
 
@@ -71,7 +89,7 @@ void main() {
       // Don't set the flag - it will be NOT_FOUND
 
       final hookManager = HookManager()..addHook(IntelliToggleTelemetryHook());
-      
+
       final featureClient = FeatureClient(
         metadata: ClientMetadata(name: 'test-client'),
         hookManager: hookManager,
@@ -80,12 +98,12 @@ void main() {
       );
 
       final client = IntelliToggleClient(featureClient);
-      
+
       // This will return default value since flag doesn't exist
       final result = await client.getBooleanValue('missing-flag', false);
 
       expect(result, equals(false)); // Should return default
-      
+
       // Check if error was recorded (depends on provider implementation)
       // Some providers don't throw on missing flags, they just return default
       // Adjust assertion based on actual provider behavior
@@ -96,7 +114,7 @@ void main() {
       provider.setFlag('string-flag', 'hello');
 
       final hookManager = HookManager()..addHook(IntelliToggleTelemetryHook());
-      
+
       final featureClient = FeatureClient(
         metadata: ClientMetadata(name: 'test-client'),
         hookManager: hookManager,
@@ -105,22 +123,25 @@ void main() {
       );
 
       final client = IntelliToggleClient(featureClient);
-      
+
       // Try to get as boolean (type mismatch)
       try {
         await client.getBooleanValue('string-flag', false);
         // If no exception, check error metrics were incremented
       } catch (e) {
         // Expected type mismatch error
-        expect(Telemetry.metrics.counters['feature_flag.evaluation_error_count'], greaterThan(0));
+        expect(
+          Telemetry.metrics.counters['feature_flag.evaluation_error_count'],
+          greaterThan(0),
+        );
       }
     });
 
     test('sets error.code attribute on span for errors', () async {
       final provider = intellitoggle.InMemoryProvider();
-      
+
       final hookManager = HookManager()..addHook(IntelliToggleTelemetryHook());
-      
+
       final featureClient = FeatureClient(
         metadata: ClientMetadata(name: 'test-client'),
         hookManager: hookManager,
@@ -129,7 +150,7 @@ void main() {
       );
 
       final client = IntelliToggleClient(featureClient);
-      
+
       try {
         await client.getBooleanValue('error-flag', false);
       } catch (e) {
@@ -147,7 +168,7 @@ void main() {
       provider.setFlag('fast-flag', true);
 
       final hookManager = HookManager()..addHook(IntelliToggleTelemetryHook());
-      
+
       final featureClient = FeatureClient(
         metadata: ClientMetadata(name: 'test-client'),
         hookManager: hookManager,
@@ -156,22 +177,25 @@ void main() {
       );
 
       final client = IntelliToggleClient(featureClient);
-      
+
       // Evaluate multiple times
       for (var i = 0; i < 100; i++) {
         await client.getBooleanValue('fast-flag', false);
       }
 
       final histogram = Telemetry.metrics.latencyHistogram['fast-flag'];
-      
+
       // Verify it's a bucket map, not a list
       expect(histogram, isA<Map<int, int>>());
-      
-      // Verify buckets exist (keys should be bucket boundaries like 1, 5, 10, etc.)
-      expect(histogram!.keys.every((k) => k is int), isTrue);
-      
+
+      // Verify buckets exist (keys are already typed as int from the map)
+      expect(histogram!.keys, isNotEmpty);
+
       // Verify total counts match evaluations
-      final totalCounts = histogram.values.fold<int>(0, (sum, count) => sum + count);
+      final totalCounts = histogram.values.fold<int>(
+        0,
+        (sum, count) => sum + count,
+      );
       expect(totalCounts, equals(100));
     });
 
@@ -180,7 +204,7 @@ void main() {
       provider.setFlag('test-flag', true);
 
       final hookManager = HookManager()..addHook(IntelliToggleTelemetryHook());
-      
+
       final featureClient = FeatureClient(
         metadata: ClientMetadata(name: 'test-client'),
         hookManager: hookManager,
@@ -189,7 +213,7 @@ void main() {
       );
 
       final client = IntelliToggleClient(featureClient);
-      
+
       // Evaluate multiple times
       for (var i = 0; i < 50; i++) {
         await client.getBooleanValue('test-flag', false);
@@ -197,7 +221,7 @@ void main() {
 
       // Get percentiles
       final percentiles = Telemetry.metrics.getPercentiles('test-flag');
-      
+
       // Should have p50, p95, p99
       expect(percentiles, isNotEmpty);
       expect(percentiles.containsKey('p50'), isTrue);
@@ -209,9 +233,9 @@ void main() {
       Telemetry.enableDebugMode(); // Enable logging
 
       final provider = intellitoggle.InMemoryProvider();
-      
+
       final hookManager = HookManager()..addHook(IntelliToggleTelemetryHook());
-      
+
       final featureClient = FeatureClient(
         metadata: ClientMetadata(name: 'test-client'),
         hookManager: hookManager,
@@ -220,7 +244,7 @@ void main() {
       );
 
       final client = IntelliToggleClient(featureClient);
-      
+
       try {
         await client.getBooleanValue('error-flag', false);
       } catch (e) {

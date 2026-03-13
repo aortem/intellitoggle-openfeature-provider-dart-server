@@ -47,10 +47,7 @@ void main() {
     });
 
     test('supports initial flags via constructor', () async {
-      final seeded = InMemoryProvider(initialFlags: {
-        'a': true,
-        'b': 'hello',
-      });
+      final seeded = InMemoryProvider(initialFlags: {'a': true, 'b': 'hello'});
       final br = await seeded.getBooleanFlag('a', false);
       final sr = await seeded.getStringFlag('b', 'x');
       expect(br.value, true);
@@ -58,29 +55,47 @@ void main() {
     });
 
     test('supports context-aware callbacks', () async {
-      provider.setFlag('is-admin', (Map<String, dynamic> ctx) => ctx['role'] == 'admin');
-      final r1 = await provider.getBooleanFlag('is-admin', false, context: {'role': 'admin'});
-      final r2 = await provider.getBooleanFlag('is-admin', false, context: {'role': 'user'});
+      provider.setFlag(
+        'is-admin',
+        (Map<String, dynamic> ctx) => ctx['role'] == 'admin',
+      );
+      final r1 = await provider.getBooleanFlag(
+        'is-admin',
+        false,
+        context: {'role': 'admin'},
+      );
+      final r2 = await provider.getBooleanFlag(
+        'is-admin',
+        false,
+        context: {'role': 'user'},
+      );
       expect(r1.value, true);
       expect(r2.value, false);
     });
 
-    test('configuration changed emits union of previous and new keys', () async {
-      final events = <IntelliToggleEvent>[];
-      final sub = provider.events.listen(events.add);
-      provider.setFlag('a', 1);
-      provider.setFlag('b', 2);
-      // remove a and add c -> union should be a,b,c
-      provider.removeFlag('a');
-      provider.setFlag('c', 3);
-      await Future.delayed(const Duration(milliseconds: 20));
-      final confEvents = events.where((e) => e.type == IntelliToggleEventType.configurationChanged).toList();
-      expect(confEvents, isNotEmpty);
-      final last = confEvents.last;
-      final changed = (last.data?['flagsChanged'] as List<dynamic>?)?.cast<String>() ?? <String>[];
-      expect(changed.toSet().containsAll({'a','b','c'}), true);
-      await sub.cancel();
-    });
+    test(
+      'configuration changed emits union of previous and new keys',
+      () async {
+        final events = <IntelliToggleEvent>[];
+        final sub = provider.events.listen(events.add);
+        provider.setFlag('a', 1);
+        provider.setFlag('b', 2);
+        // remove a and add c -> union should be a,b,c
+        provider.removeFlag('a');
+        provider.setFlag('c', 3);
+        await Future.delayed(const Duration(milliseconds: 20));
+        final confEvents = events
+            .where((e) => e.type == IntelliToggleEventType.configurationChanged)
+            .toList();
+        expect(confEvents, isNotEmpty);
+        final last = confEvents.last;
+        final changed =
+            (last.data?['flagsChanged'] as List<dynamic>?)?.cast<String>() ??
+            <String>[];
+        expect(changed.toSet().containsAll({'a', 'b', 'c'}), true);
+        await sub.cancel();
+      },
+    );
   });
 
   group('ConsoleLoggingHook', () {
@@ -88,7 +103,10 @@ void main() {
     late MockLogger logger;
 
     setUp(() {
-      hook = ConsoleLoggingHook(printContext: true, logger: (m) => logger.log(m));
+      hook = ConsoleLoggingHook(
+        printContext: true,
+        logger: (m) => logger.log(m),
+      );
       logger = MockLogger();
     });
 
@@ -107,9 +125,30 @@ void main() {
       await hook.after(context);
       await hook.finally_(context, null);
 
-      expect(logger.messages.any((m) => m.contains('"stage":"before"') && m.contains('"flag_key":"test-flag"')), true);
-      expect(logger.messages.any((m) => m.contains('"stage":"after"') && m.contains('"flag_key":"test-flag"')), true);
-      expect(logger.messages.any((m) => m.contains('"stage":"finally"') && m.contains('"flag_key":"test-flag"')), true);
+      expect(
+        logger.messages.any(
+          (m) =>
+              m.contains('"stage":"before"') &&
+              m.contains('"flag_key":"test-flag"'),
+        ),
+        true,
+      );
+      expect(
+        logger.messages.any(
+          (m) =>
+              m.contains('"stage":"after"') &&
+              m.contains('"flag_key":"test-flag"'),
+        ),
+        true,
+      );
+      expect(
+        logger.messages.any(
+          (m) =>
+              m.contains('"stage":"finally"') &&
+              m.contains('"flag_key":"test-flag"'),
+        ),
+        true,
+      );
     });
 
     test('logs error and finally on error', () async {
@@ -127,8 +166,22 @@ void main() {
       await hook.error(context);
       await hook.finally_(context, null);
 
-      expect(logger.messages.any((m) => m.contains('"stage":"error"') && m.contains('"flag_key":"test-flag"')), true);
-      expect(logger.messages.any((m) => m.contains('"stage":"finally"') && m.contains('"flag_key":"test-flag"')), true);
+      expect(
+        logger.messages.any(
+          (m) =>
+              m.contains('"stage":"error"') &&
+              m.contains('"flag_key":"test-flag"'),
+        ),
+        true,
+      );
+      expect(
+        logger.messages.any(
+          (m) =>
+              m.contains('"stage":"finally"') &&
+              m.contains('"flag_key":"test-flag"'),
+        ),
+        true,
+      );
     });
   });
 }
@@ -142,13 +195,26 @@ class MockLogger {
 }
 
 class MockHookContext implements HookContext {
+  @override
   final String flagKey;
   final Object defaultValue;
+  @override
   final Map<String, dynamic>? evaluationContext;
   final Map<String, dynamic>? invocationContext;
+  @override
   final Exception? error;
+  @override
   final Object? result;
+  @override
   final Map<String, dynamic> metadata;
+  @override
+  final ClientMetadata? clientMetadata;
+  @override
+  final ProviderMetadata? providerMetadata;
+  @override
+  final FlagValueType? flagValueType;
+  @override
+  final HookData hookData;
 
   MockHookContext({
     required this.flagKey,
@@ -158,5 +224,9 @@ class MockHookContext implements HookContext {
     required this.error,
     required this.result,
     required this.metadata,
-  });
+    this.clientMetadata,
+    this.providerMetadata,
+    this.flagValueType,
+    HookData? hookData,
+  }) : hookData = hookData ?? HookData();
 }

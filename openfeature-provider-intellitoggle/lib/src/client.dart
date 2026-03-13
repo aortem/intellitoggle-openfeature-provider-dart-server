@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:openfeature_dart_server_sdk/client.dart';
 import 'package:openfeature_dart_server_sdk/evaluation_context.dart';
+import 'package:openfeature_dart_server_sdk/feature_provider.dart';
 
 /// Convenience wrapper over OpenFeature client with IntelliToggle-specific methods
 ///
@@ -174,6 +175,37 @@ class IntelliToggleClient {
         .timeout(_timeout);
 
     return result;
+  }
+
+  /// Record a tracking event (spec Section 6)
+  ///
+  /// Sends a tracking event through the OpenFeature client to the provider.
+  /// Context merging follows: API → transaction → client → invocation.
+  /// If the provider does not support tracking, the call silently no-ops.
+  ///
+  /// [trackingEventName] - Name of the tracking event
+  /// [evaluationContext] - Optional context attributes for the event
+  /// [targetingKey] - Optional targeting key for the event context
+  /// [kind] - Optional context kind
+  /// [trackingDetails] - Optional tracking event details (value, attributes)
+  Future<void> track(
+    String trackingEventName, {
+    Map<String, dynamic>? evaluationContext,
+    String? targetingKey,
+    String? kind,
+    TrackingEventDetails? trackingDetails,
+  }) async {
+    final context = _buildContext(
+      evaluationContext,
+      targetingKey: targetingKey,
+      kind: kind,
+    );
+
+    await _client.track(
+      trackingEventName,
+      context: context,
+      trackingDetails: trackingDetails,
+    );
   }
 
   /// Build evaluation context from various sources

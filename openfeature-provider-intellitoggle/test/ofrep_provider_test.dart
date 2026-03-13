@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:test/test.dart';
 
@@ -13,7 +12,6 @@ void main() {
     test('boolean evaluation success maps fields', () async {
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       final base = Uri.parse('http://127.0.0.1:${server.port}');
-      int calls = 0;
       // Serve OFREP endpoints
       unawaited(() async {
         await for (final req in server) {
@@ -33,7 +31,6 @@ void main() {
               final json = jsonDecode(body) as Map<String, dynamic>;
               expect(json['type'], 'boolean');
               expect(json['context'], {'targetingKey': 'user-1'});
-              calls++;
               final payload = jsonEncode({
                 'value': true,
                 'reason': 'STATIC',
