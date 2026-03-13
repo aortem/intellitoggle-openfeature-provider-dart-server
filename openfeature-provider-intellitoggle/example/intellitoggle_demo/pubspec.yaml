@@ -4,12 +4,12 @@ version: 0.0.1
 # repository: https://github.com/my_org/my_repo
 
 environment:
-  sdk: ^3.10.3
+  sdk: ^3.11.0
 
 # Add regular dependencies here.
 dependencies:
   openfeature_dart_server_sdk: 0.0.17
-  openfeature_provider_intellitoggle: ^0.0.6
+  openfeature_provider_intellitoggle: ^0.0.7
   http: ^1.1.0
   jwt_generator: ^0.0.8
 
