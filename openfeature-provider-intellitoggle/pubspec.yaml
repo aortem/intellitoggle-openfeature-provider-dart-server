@@ -1,6 +1,6 @@
 name: openfeature_provider_intellitoggle
 description: Official IntelliToggle provider for the OpenFeature Dart Server SDK.
-version: 0.0.6
+version: 0.0.7
 homepage: https://intellitoggle.com
 repository: https://github.com/aortem/intellitoggle-openfeature-provider-dart-server
 
