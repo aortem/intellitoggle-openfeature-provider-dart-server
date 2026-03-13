@@ -11,4 +11,5 @@
 **/.dart_tool/
 **/pubspec.lock
 **/tmp/pana_*
+openfeature-provider-intellitoggle/doc/openapi.yaml
 

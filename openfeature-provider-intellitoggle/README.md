@@ -24,7 +24,7 @@ Add to your server-side Dart project:
 ```yaml
 dependencies:
   openfeature_dart_server_sdk: ^0.0.17
-  openfeature_provider_intellitoggle: ^0.0.6
+  openfeature_provider_intellitoggle: ^0.0.7
 ```
 
 Then install:
@@ -182,9 +182,11 @@ void main() async {
 
 ---
 
-## ⚙️ OFREP Server (Optional)
+## ⚙️ Remote Evaluation (Optional)
 
-Start a remote flag evaluation API:
+### OREP Server
+
+Start the local remote flag evaluation API:
 
 ```bash
 dart run bin/orep_server.dart
@@ -239,55 +241,6 @@ final client = IntelliToggleClient(
     metadata: ClientMetadata(name: 'service-x'),
     hookManager: HookManager(),
     defaultContext: EvaluationContext(attributes: {}),
-  ),
-);
-
-final result = await client.getBooleanValue(
-  'my-flag',
-  false,
-  targetingKey: 'user-123',
-  evaluationContext: {'region': 'us-east-1'},
-);
-```
-
-### OFREP Client (Remote Evaluation)
-
-The provider can call an OFREP-compliant endpoint for remote flag evaluation.
-
-- Enable via options or environment variables.
-- Maps OFREP responses to OpenFeature `ProviderEvaluation` including `value`, `variant`, `reason`, `errorCode`, and `flagMetadata`.
-- Supports retries, timeouts, and optional in-memory cache keyed by `(flagKey + context)`.
-
-Environment variables:
-
-```
-OFREP_ENABLED=true
-OFREP_BASE_URL=https://ofrep.example.com
-OFREP_AUTH_TOKEN=your_bearer_token
-OFREP_TIMEOUT_MS=5000
-OFREP_MAX_RETRIES=3
-OFREP_CACHE_TTL_MS=60000
-```
-
-Code example:
-
-```dart
-final provider = IntelliToggleProvider(
-  sdkKey: 'YOUR_TOKEN', // used if OFREP_AUTH_TOKEN not set
-  options: IntelliToggleOptions(
-    useOfrep: true,
-    ofrepBaseUri: Uri.parse('https://ofrep.example.com'),
-    cacheTtl: const Duration(minutes: 1),
-    maxRetries: 3,
-    timeout: const Duration(seconds: 5),
-  ),
-);
-await OpenFeatureAPI().setProvider(provider);
-
-final client = IntelliToggleClient(
-  FeatureClient(
-    metadata: ClientMetadata(name: 'service-x'),
-    hookManager: HookManager(),
   ),
 );
 

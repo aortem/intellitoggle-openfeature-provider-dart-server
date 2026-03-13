@@ -1,4 +1,19 @@
 
+## 0.0.7
+
+### Added
+
+* Added OpenFeature tracking support via `IntelliToggleClient.track()`.
+* Added no-op tracking implementations for the IntelliToggle and in-memory providers to align with the OpenFeature spec.
+* Added OpenTelemetry-compatible telemetry hook documentation and release notes coverage for the latest provider capabilities.
+
+### Changed
+
+* Bumped `openfeature_dart_server_sdk` compatibility to `^0.0.17`.
+* Re-exported `FeatureProvider` while hiding the SDK `InMemoryProvider` to avoid symbol conflicts.
+* Updated OFREP documentation and usage examples to reflect the current provider API and remote-evaluation flow.
+* Refreshed package and example dependency references for the `0.0.7` release.
+
 ## 0.0.6
 
 ### Added
