@@ -162,6 +162,18 @@ class IntelliToggleProvider implements FeatureProvider {
     );
   }
 
+  /// Tracking API (spec Section 6) - record a tracking event
+  /// Providers that do not support tracking should silently no-op.
+  @override
+  Future<void> track(
+    String trackingEventName, {
+    Map<String, dynamic>? evaluationContext,
+    TrackingEventDetails? trackingDetails,
+  }) async {
+    // Silent no-op per spec. Override in subclass to send tracking events
+    // to IntelliToggle's analytics backend when supported.
+  }
+
   /// Core flag evaluation logic using corrected endpoints
   Future<FlagEvaluationResult<T>> _evaluateFlag<T>(
     String flagKey,
@@ -235,9 +247,9 @@ class IntelliToggleProvider implements FeatureProvider {
           case 'object':
             if (rawValue is Map<String, dynamic>) {
               value = rawValue as T;
-          } else if (rawValue is Map) {
-            value = Map<String, dynamic>.from(rawValue) as T;
-          } else {
+            } else if (rawValue is Map) {
+              value = Map<String, dynamic>.from(rawValue) as T;
+            } else {
               throw TypeMismatchException('Expected object');
             }
             break;
