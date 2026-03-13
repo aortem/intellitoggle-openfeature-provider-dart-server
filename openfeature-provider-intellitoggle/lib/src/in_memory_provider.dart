@@ -95,7 +95,9 @@ class InMemoryProvider implements FeatureProvider {
     // field reflects a union of all previous and new keys, even across
     // multiple sequential updates.
     _seenKeys = <String>{..._seenKeys, ...previousKeys, ...currentKeys};
-    _eventController.add(IntelliToggleEvent.configurationChanged(_seenKeys.toList()));
+    _eventController.add(
+      IntelliToggleEvent.configurationChanged(_seenKeys.toList()),
+    );
   }
 
   /// Listen to provider events (e.g., configuration changed).
@@ -125,6 +127,16 @@ class InMemoryProvider implements FeatureProvider {
       _state = ProviderState.ERROR;
       _eventController.add(IntelliToggleEvent.error(e.toString()));
     }
+  }
+
+  /// Tracking API (spec Section 6) - silent no-op for in-memory provider
+  @override
+  Future<void> track(
+    String trackingEventName, {
+    Map<String, dynamic>? evaluationContext,
+    TrackingEventDetails? trackingDetails,
+  }) async {
+    // No-op per spec. In-memory provider does not support tracking.
   }
 
   /// Resolve a boolean flag.
@@ -322,6 +334,7 @@ class InMemoryProvider implements FeatureProvider {
       reason: 'STATIC',
     );
   }
+
   /// Evaluate a stored value which may be either static or a callback
   /// receiving the evaluation context and returning the value.
   dynamic _evaluateValue(dynamic raw, Map<String, dynamic>? context) {

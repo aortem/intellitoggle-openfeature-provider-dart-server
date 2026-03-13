@@ -9,9 +9,11 @@ This package integrates seamlessly with [`openfeature_dart_server_sdk`](https://
 ## 🔧 Features
 
 - ✅ Supports Boolean, String, Number, and Object flag evaluations
+- 📊 Tracking API support (OpenFeature spec Section 6)
 - 🔁 Real-time updates via IntelliToggle event system
 - 🧪 Includes `InMemoryProvider` for local development and testing
-- 🌐 Optional OREP/OPTSP server support for remote evaluation (e.g. test suites)
+- 🌐 Optional OFREP server support for remote evaluation (e.g. test suites)
+- 📈 OpenTelemetry-compatible telemetry hooks
 
 ---
 
@@ -21,8 +23,8 @@ Add to your server-side Dart project:
 
 ```yaml
 dependencies:
-  openfeature_dart_server_sdk: ^0.0.15
-  openfeature_provider_intellitoggle: ^0.0.5
+  openfeature_dart_server_sdk: ^0.0.17
+  openfeature_provider_intellitoggle: ^0.0.6
 ```
 
 Then install:
@@ -117,6 +119,16 @@ void main() async {
 
   print('Flag value: ${newFeatureEnabled}');
 
+  // Track a user action (OpenFeature spec Section 6)
+  await client.track(
+    'dashboard-viewed',
+    targetingKey: 'user-123',
+    trackingDetails: TrackingEventDetails(
+      value: 1.0,
+      attributes: {'source': 'sidebar'},
+    ),
+  );
+
   await provider.shutdown();
   print('✓ Test completed successfully!');
 }
@@ -170,7 +182,7 @@ void main() async {
 
 ---
 
-## ⚙️ OREP Server (Optional)
+## ⚙️ OFREP Server (Optional)
 
 Start a remote flag evaluation API:
 
@@ -184,7 +196,59 @@ Configure using environment variables:
 | ----------------- | ---------------- |
 | `OREP_PORT`       | `8080`           |
 | `OREP_HOST`       | `0.0.0.0`        |
-| `OREP_AUTH_TOKEN` | `changeme-token` |
+| `OREP_AUTH_TOKEN`  | `changeme-token` |
+
+### OFREP Client (Remote Evaluation)
+
+The provider can call an OFREP-compliant endpoint for remote flag evaluation.
+
+- Enable via options or environment variables.
+- Maps OFREP responses to OpenFeature `ProviderEvaluation` including `value`, `variant`, `reason`, `errorCode`, and `flagMetadata`.
+- Supports retries, timeouts, and optional in-memory cache keyed by `(flagKey + context)`.
+
+Environment variables:
+
+```
+OFREP_ENABLED=true
+OFREP_BASE_URL=https://ofrep.example.com
+OFREP_AUTH_TOKEN=your_bearer_token
+OFREP_TIMEOUT_MS=5000
+OFREP_MAX_RETRIES=3
+OFREP_CACHE_TTL_MS=60000
+```
+
+Code example:
+
+```dart
+final provider = IntelliToggleProvider(
+  clientId: 'client_id',
+  clientSecret: 'cs_secret',
+  tenantId: 'tenant_id',
+  options: IntelliToggleOptions(
+    useOfrep: true,
+    ofrepBaseUri: Uri.parse('https://ofrep.example.com'),
+    cacheTtl: const Duration(minutes: 1),
+    maxRetries: 3,
+    timeout: const Duration(seconds: 5),
+  ),
+);
+await OpenFeatureAPI().setProvider(provider);
+
+final client = IntelliToggleClient(
+  FeatureClient(
+    metadata: ClientMetadata(name: 'service-x'),
+    hookManager: HookManager(),
+    defaultContext: EvaluationContext(attributes: {}),
+  ),
+);
+
+final result = await client.getBooleanValue(
+  'my-flag',
+  false,
+  targetingKey: 'user-123',
+  evaluationContext: {'region': 'us-east-1'},
+);
+```
 
 ### OFREP Client (Remote Evaluation)
 
@@ -241,18 +305,11 @@ final result = await client.getBooleanValue(
 
 - [IntelliToggle Docs](https://intellitoggle.com)
 - [OpenFeature Dart SDK](https://pub.dev/packages/openfeature_dart_server_sdk)
-- [GitHub Repository](https://github.com/aortem/intellitoggle)
+- [GitHub Repository](https://github.com/aortem/intellitoggle-openfeature-provider-dart-server)
 - [OpenFeature Specification](https://openfeature.dev)
 
 ---
 
 ## 📝 License
 
-MIT
-
-```
-
----
-
-Let me know if you'd like a `bin/orep_server.dart` usage snippet or an `example/main.dart` to pair with this for pub.dev’s [score metrics](https://dart.dev/tools/pub/score).
-```
+Apache-2.0
