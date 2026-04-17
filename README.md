@@ -25,6 +25,8 @@
 Official IntelliToggle provider for the OpenFeature Dart Server SDK. Enables secure feature flag evaluation with OAuth2 authentication, multi-tenant isolation, and real-time updates.
 
 > **Note:** This provider targets server-side Dart applications. Flutter support is available but secondary to server-side functionality.
+>
+> **Canonical package:** `openfeature_provider_intellitoggle` is the only supported Dart server package for IntelliToggle. The legacy `intellitoggle_server_sdk` package is deprecated and should not be used for new integrations.
 
 ## Features
 
@@ -45,8 +47,8 @@ Compatible with Dart **3.9.2** and above.
 
 ```yaml
 dependencies:
-  openfeature_dart_server_sdk: ^0.0.11
-  openfeature_provider_intellitoggle: ^0.0.5
+  openfeature_dart_server_sdk: ^0.0.17
+  openfeature_provider_intellitoggle: ^0.0.8
 ```
 
 ```bash
@@ -98,10 +100,14 @@ import 'package:openfeature_dart_server_sdk/openfeature_dart_server_sdk.dart';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 
 void main() async {
-  // Initialize provider with OAuth2 client secret
+  // Initialize provider with OAuth2 client credentials
   final provider = IntelliToggleProvider(
-    sdkKey: 'YOUR_CLIENT_SECRET',
-    options: IntelliToggleOptions.production(),
+    clientId: 'YOUR_CLIENT_ID',
+    clientSecret: 'YOUR_CLIENT_SECRET',
+    tenantId: 'YOUR_TENANT_ID',
+    options: IntelliToggleOptions.production(
+      baseUri: Uri.parse('https://api.intellitoggle.com'),
+    ),
   );
 
   // Set as global provider
@@ -565,7 +571,9 @@ Example:
 
 ```dart
 final provider = IntelliToggleProvider(
-  sdkKey: 'YOUR_TOKEN',
+  clientId: 'YOUR_CLIENT_ID',
+  clientSecret: 'YOUR_CLIENT_SECRET',
+  tenantId: 'YOUR_TENANT_ID',
   options: IntelliToggleOptions(
     useOfrep: true,
     ofrepBaseUri: Uri.parse('http://localhost:8080'),

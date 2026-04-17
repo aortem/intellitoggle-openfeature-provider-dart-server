@@ -4,6 +4,9 @@ An OpenFeature provider for [IntelliToggle](https://intellitoggle.com), enabling
 
 This package integrates seamlessly with [`openfeature_dart_server_sdk`](https://pub.dev/packages/openfeature_dart_server_sdk) and supports IntelliToggle's advanced targeting, rule-based rollouts, and experimentation platform.
 
+> This is the canonical and only supported Dart server package for IntelliToggle.
+> The legacy `intellitoggle_server_sdk` package in the monorepo is deprecated and will be removed.
+
 ---
 
 ## 🔧 Features
@@ -24,7 +27,7 @@ Add to your server-side Dart project:
 ```yaml
 dependencies:
   openfeature_dart_server_sdk: ^0.0.17
-  openfeature_provider_intellitoggle: ^0.0.7
+  openfeature_provider_intellitoggle: ^0.0.8
 ```
 
 Then install:
@@ -265,4 +268,4 @@ final result = await client.getBooleanValue(
 
 ## 📝 License
 
-Apache-2.0
+BSD-3-Clause

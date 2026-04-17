@@ -1,4 +1,12 @@
 
+## 0.0.8
+
+### Changed
+
+* Declared `openfeature_provider_intellitoggle` as the canonical Dart server package for IntelliToggle.
+* Deprecated the legacy in-repo `intellitoggle_server_sdk` package and consolidated provider ownership here.
+* Updated package documentation to reflect the OAuth client-credentials flow as the primary integration model.
+
 ## 0.0.7
 
 ### Added
