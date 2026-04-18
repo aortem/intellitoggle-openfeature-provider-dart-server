@@ -32,9 +32,9 @@ void main() {
         : IntelliToggleOptions.production();
 
     final provider = IntelliToggleProvider(
-      clientId: clientId!,
-      clientSecret: clientSecret!,
-      tenantId: tenantId!,
+      clientId: clientId,
+      clientSecret: clientSecret,
+      tenantId: tenantId,
       options: options,
     );
 

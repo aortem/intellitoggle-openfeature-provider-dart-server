@@ -13,6 +13,7 @@ Future<void> main() async {
     options: IntelliToggleOptions(
       useOfrep: true,
       ofrepBaseUri: Uri.parse(base),
+      ofrepAuthToken: token,
       enableLogging: true,
       timeout: const Duration(seconds: 5),
       maxRetries: 2,

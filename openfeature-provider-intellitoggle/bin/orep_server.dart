@@ -2,8 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:jwt_generator/jwt_generator.dart';
-import 'package:openfeature_dart_server_sdk/feature_provider.dart'
-    hide InMemoryProvider;
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 
 final IntelliToggleContextProcessor _contextProcessor =
