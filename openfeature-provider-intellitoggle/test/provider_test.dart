@@ -111,11 +111,9 @@ void main() {
     });
 
     test('logs before, after, and finally', () async {
-      final context = MockHookContext(
+      final context = HookContext(
         flagKey: 'test-flag',
-        defaultValue: false,
         evaluationContext: {},
-        invocationContext: {},
         error: null,
         result: null,
         metadata: {},
@@ -152,11 +150,9 @@ void main() {
     });
 
     test('logs error and finally on error', () async {
-      final context = MockHookContext(
+      final context = HookContext(
         flagKey: 'test-flag',
-        defaultValue: false,
         evaluationContext: {},
-        invocationContext: {},
         error: Exception('Test Error'),
         result: null,
         metadata: {},
@@ -192,41 +188,4 @@ class MockLogger {
   void log(String message) {
     messages.add(message);
   }
-}
-
-class MockHookContext implements HookContext {
-  @override
-  final String flagKey;
-  final Object defaultValue;
-  @override
-  final Map<String, dynamic>? evaluationContext;
-  final Map<String, dynamic>? invocationContext;
-  @override
-  final Exception? error;
-  @override
-  final Object? result;
-  @override
-  final Map<String, dynamic> metadata;
-  @override
-  final ClientMetadata? clientMetadata;
-  @override
-  final ProviderMetadata? providerMetadata;
-  @override
-  final FlagValueType? flagValueType;
-  @override
-  final HookData hookData;
-
-  MockHookContext({
-    required this.flagKey,
-    required this.defaultValue,
-    this.invocationContext,
-    this.evaluationContext,
-    required this.error,
-    required this.result,
-    required this.metadata,
-    this.clientMetadata,
-    this.providerMetadata,
-    this.flagValueType,
-    HookData? hookData,
-  }) : hookData = hookData ?? HookData();
 }

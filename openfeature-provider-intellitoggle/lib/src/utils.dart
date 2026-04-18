@@ -118,6 +118,21 @@ class IntelliToggleUtils {
     };
   }
 
+  /// Build headers for OFREP requests without forcing IntelliToggle OAuth.
+  Future<Map<String, String>> buildOfrepHeaders() async {
+    return {
+      'Content-Type': 'application/json',
+      'User-Agent': _options.userAgent,
+      'Accept': 'application/json',
+      'X-SDK-Version': '1.0.0',
+      'X-SDK-Language': 'dart',
+      if (tenantId.isNotEmpty) 'X-Tenant-ID': tenantId,
+      if (_options.ofrepAuthToken != null &&
+          _options.ofrepAuthToken!.isNotEmpty)
+        'Authorization': 'Bearer ${_options.ofrepAuthToken!}',
+      ..._options.headers,
+    };
+  }
 
   /// Evaluate a flag via IntelliToggle API
   ///
@@ -259,14 +274,14 @@ class IntelliToggleUtils {
     const int maxDelayMs = 30000;
     while (attempts < _options.maxRetries) {
       try {
-        final headers = await buildHeaders();
-        
+        final headers = await buildOfrepHeaders();
+
         final response = await _makeRequest(
           'POST',
           '/v1/flags/$flagKey/evaluate',
           headers: headers,
           body: jsonEncode(payload),
-          // Override base via resolve
+          baseUri: base,
         );
         if (response.statusCode == 200) {
           if (_options.enableLogging) {
@@ -310,7 +325,6 @@ class IntelliToggleUtils {
     throw ApiException('Max retries exceeded');
   }
 
-
   /// Make HTTP request with retry logic and exponential backoff (max 30s)
   ///
   /// Implements automatic retry with exponential backoff for resilient
@@ -328,9 +342,10 @@ class IntelliToggleUtils {
     String path, {
     Map<String, String>? headers,
     String? body,
+    Uri? baseUri,
   }) async {
     // Build URI correctly
-    final baseUrlStr = _options.baseUri.toString().replaceAll(
+    final baseUrlStr = (baseUri ?? _options.baseUri).toString().replaceAll(
       RegExp(r'/$'),
       '',
     );

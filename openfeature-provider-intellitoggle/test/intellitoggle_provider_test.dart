@@ -1,140 +1,113 @@
-// test.dart
+import 'dart:io';
+
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
+import 'package:test/test.dart';
 
-void main() async {
-  try {
-    print('Starting IntelliToggle provider test with OAuth2...\n');
+void main() {
+  final config = _IntegrationConfig.fromEnvironment();
 
-    final provider = IntelliToggleProvider(
-      clientId: "client_id",
-      clientSecret: "cs_secret",
-      tenantId: "tenant_id",
-      options: IntelliToggleOptions(
-        // baseUri: Uri.parse("https://api.intellitoggle.com"),
-        // timeout: const Duration(seconds: 10),
-        // enableLogging: true,
+  group('IntelliToggleProvider integration', () {
+    test(
+      'evaluates representative flag types with configured credentials',
+      () async {
+        final provider = IntelliToggleProvider(
+          clientId: config.clientId!,
+          clientSecret: config.clientSecret!,
+          tenantId: config.tenantId!,
+          options: IntelliToggleOptions(baseUri: config.baseUri),
+        );
+        addTearDown(provider.shutdown);
+
+        await provider.initialize();
+
+        final api = OpenFeatureAPI();
+        api.setProvider(provider);
+
+        final booleanResult = await provider.getBooleanFlag(
+          'new-dashboard-ui',
+          false,
+        );
+        expect(booleanResult.value, isA<bool>());
+        expect(booleanResult.reason, isA<String>());
+
+        final contextualResult = await provider.getBooleanFlag(
+          'test-flag',
+          false,
+          context: {
+            'targetingKey': 'user-123',
+            'kind': 'user',
+            'email': 'test@example.com',
+            'role': 'admin',
+          },
+        );
+        expect(contextualResult.value, isA<bool>());
+        expect(contextualResult.reason, isA<String>());
+
+        final missingFlagResult = await provider.getBooleanFlag(
+          'missing-flag',
+          true,
+          context: {'targetingKey': 'user-456'},
+        );
+        expect(missingFlagResult.value, isA<bool>());
+        expect(missingFlagResult.reason, isA<String>());
+
+        final themeConfigResult = await provider.getStringFlag(
+          'theme-config',
+          'light',
+          context: {'targetingKey': 'user-789', 'kind': 'user'},
+        );
+        expect(themeConfigResult.value, isA<String>());
+        expect(themeConfigResult.reason, isA<String>());
+
+        final welcomeMessageResult = await provider.getStringFlag(
+          'welcome-message',
+          'Message',
+        );
+        expect(welcomeMessageResult.value, isA<String>());
+        expect(welcomeMessageResult.reason, isA<String>());
+      },
+      skip: config.skipReason,
+    );
+  });
+}
+
+class _IntegrationConfig {
+  final String? clientId;
+  final String? clientSecret;
+  final String? tenantId;
+  final Uri baseUri;
+
+  const _IntegrationConfig({
+    required this.clientId,
+    required this.clientSecret,
+    required this.tenantId,
+    required this.baseUri,
+  });
+
+  factory _IntegrationConfig.fromEnvironment() {
+    final env = Platform.environment;
+    return _IntegrationConfig(
+      clientId: env['INTELLITOGGLE_CLIENT_ID'],
+      clientSecret: env['INTELLITOGGLE_CLIENT_SECRET'],
+      tenantId: env['INTELLITOGGLE_TENANT_ID'],
+      baseUri: Uri.parse(
+        env['INTELLITOGGLE_API_URL'] ?? 'https://api.intellitoggle.com',
       ),
     );
+  }
 
-    print('Provider created, initializing...');
-    await provider.initialize();
-    print('✓ Provider initialized successfully!\n');
+  String? get skipReason {
+    final missing = <String>[
+      if (clientId == null || clientId!.isEmpty) 'INTELLITOGGLE_CLIENT_ID',
+      if (clientSecret == null || clientSecret!.isEmpty)
+        'INTELLITOGGLE_CLIENT_SECRET',
+      if (tenantId == null || tenantId!.isEmpty) 'INTELLITOGGLE_TENANT_ID',
+    ];
 
-    final api = OpenFeatureAPI();
-    api.setProvider(provider);
-
-    // Test 1a: Evaluate a boolean flag
-    print('Test 1a: Evaluating boolean flag "new-dashboard-ui"...');
-    try {
-      // result.flagKey, result.value, result.evaluatedAt, result.reason
-      final result = await provider.getBooleanFlag('new-dashboard-ui', false);
-
-      if (result.errorCode != null) {
-        print('✗ Error Code: ${result.errorCode}');
-        print('✗ Error Message: ${result.errorMessage}');
-      } else {
-        print('Flag value: ${result.value}'); // Flag evaluated value
-      }
-      print('');
-    } catch (e) {
-      print('✗ Flag evaluation failed: $e\n');
+    if (missing.isEmpty) {
+      return null;
     }
 
-    print('Test 1b: Evaluating boolean flag "test-flag"...');
-    try {
-      // result.flagKey, result.value, result.evaluatedAt, result.reason
-      final result = await provider.getBooleanFlag(
-        'test-flag',
-        false,
-        context: {
-          'targetingKey': 'user-123',
-          'kind': 'user',
-          'email': 'test@example.com',
-          'role': 'admin',
-        },
-      );
-
-      if (result.errorCode != null) {
-        print('✗ Error Code: ${result.errorCode}');
-        print('✗ Error Message: ${result.errorMessage}');
-      } else {
-        print('Flag value: ${result.value}'); // Flag evaluated value
-      }
-      print('');
-    } catch (e) {
-      print('✗ Flag evaluation failed: $e\n');
-    }
-
-    // Test 2: Evaluate a non-existent flag (should return default)
-    print('Test 2: Evaluating non-existent flag "missing-flag"...');
-    try {
-      // result.flagKey, result.value, result.evaluatedAt, result.reason
-      final result = await provider.getBooleanFlag(
-        'missing-flag',
-        true, // default value
-        context: {'targetingKey': 'user-456'},
-      );
-
-      if (result.errorCode != null) {
-        print('✗ Error Code: ${result.errorCode}');
-        print('✗ Error Message: ${result.errorMessage}');
-      } else {
-        print('Flag value: ${result.value}'); // Flag evaluated value
-      }
-      print('');
-    } catch (e) {
-      print('✗ Unexpected error: $e\n');
-    }
-
-    // Test 3: Evaluate a string flag
-    print('Test 3: Evaluating string flag "theme-config"...');
-    try {
-      // result.flagKey, result.value, result.evaluatedAt, result.reason
-      final result = await provider.getStringFlag(
-        'theme-config',
-        'light',
-        context: {'targetingKey': 'user-789', 'kind': 'user'},
-      );
-
-      if (result.errorCode != null) {
-        print('✗ Error Code: ${result.errorCode}');
-        print('✗ Error Message: ${result.errorMessage}');
-      } else {
-        print('Flag value: ${result.value}'); // Flag evaluated value
-      }
-      print('');
-    } catch (e) {
-      print('✗ Flag evaluation failed: $e\n');
-    }
-
-    print('Test: Evaluating string flag "welcome-message"...');
-    try {
-      // result.flagKey, result.value, result.evaluatedAt, result.reason
-      final result = await provider.getStringFlag('welcome-message', 'Message');
-
-      if (result.errorCode != null) {
-        print('✗ Error Code: ${result.errorCode}');
-        print('✗ Error Message: ${result.errorMessage}');
-      } else {
-        print('Flag value: ${result.value}'); // Flag evaluated value
-      }
-      print('');
-    } catch (e) {
-      print('✗ Flag evaluation failed: $e\n');
-    }
-
-    await provider.shutdown();
-    print('✓ Test completed successfully!');
-  } catch (error, stackTrace) {
-    print('ERROR: $error');
-    print('STACK TRACE: $stackTrace');
-
-    if (error.toString().contains('401')) {
-      print('\nOAuth2 Authentication Failed:');
-      print('1. Check your client_id, client_secret, and tenant_id');
-      print(
-        '2. Check if your credentials have the "flags:read flags:evaluate" scope',
-      );
-    }
+    return 'Set ${missing.join(', ')} to run the live IntelliToggle integration test.';
   }
 }

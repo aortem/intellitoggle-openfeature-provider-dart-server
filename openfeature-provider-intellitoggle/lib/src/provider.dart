@@ -70,11 +70,7 @@ class IntelliToggleProvider implements FeatureProvider {
     _state = ProviderState.NOT_READY;
     try {
       _eventEmitter.emit(IntelliToggleEvent.initializing());
-      // Test connection to ensure API is reachable
       await _testConnection();
-
-      // Just verify OAuth connection works by getting a token
-      await _utils.buildHeaders();
 
       if (_options.enableLogging) {
         print('[IntelliToggle] Provider initialized successfully');
@@ -190,11 +186,14 @@ class IntelliToggleProvider implements FeatureProvider {
 
       final processedContext = _contextProcessor.processContext(context ?? {});
 
-      final response = await _utils.evaluateFlag(
-        flagKey,
-        processedContext,
-        valueType,
-      );
+      final response = _options.useOfrep
+          ? await _utils.evaluateFlagOfrep(
+              flagKey,
+              processedContext,
+              valueType,
+              defaultValue,
+            )
+          : await _utils.evaluateFlag(flagKey, processedContext, valueType);
 
       final now = DateTime.now();
       ErrorCode? errorCode;
@@ -260,6 +259,14 @@ class IntelliToggleProvider implements FeatureProvider {
         value = defaultValue;
       }
 
+      final eventContext = Map<String, dynamic>.from(processedContext);
+      final flagMetadata = response['flagMetadata'];
+      if (flagMetadata is Map) {
+        eventContext['__flagMetadata'] = Map<String, dynamic>.from(
+          flagMetadata.cast<dynamic, dynamic>(),
+        );
+      }
+
       // Telemetry: success count + latency
       Telemetry.metrics.increment('feature_flag.evaluation_success_count');
       Telemetry.recordLatency(flagKey, DateTime.now().difference(start));
@@ -281,7 +288,7 @@ class IntelliToggleProvider implements FeatureProvider {
           result.value,
           result.reason,
           variant: result.variant,
-          context: processedContext,
+          context: eventContext.isEmpty ? null : eventContext,
         ),
       );
 
@@ -325,20 +332,26 @@ class IntelliToggleProvider implements FeatureProvider {
 
   /// Test connection to IntelliToggle API health endpoint
   Future<dynamic> _testConnection() async {
+    final uri = _options.useOfrep
+        ? (_options.ofrepBaseUri ?? _options.baseUri).resolve(
+            '/v1/provider/metadata',
+          )
+        : _options.baseUri.resolve('/health');
+    final headers = _options.useOfrep
+        ? await _utils.buildOfrepHeaders()
+        : await _utils.buildHeaders();
     final response = await _httpClient
-        .get(
-          _options.baseUri.resolve('/health'),
-          headers: await _utils.buildHeaders(),
-        )
+        .get(uri, headers: headers)
         .timeout(_options.timeout);
 
     if (response.statusCode != 200) {
       throw Exception(
-        'Failed to connect to IntelliToggle API: ${response.statusCode}',
+        'Failed to connect to ${_options.useOfrep ? 'OFREP' : 'IntelliToggle API'}: ${response.statusCode}',
       );
     } else {
       if (_options.enableLogging) {
-        print('[IntelliToggle] Test Connection to route /health successful');
+        final route = _options.useOfrep ? '/v1/provider/metadata' : '/health';
+        print('[IntelliToggle] Test connection to $route successful');
       }
       return response;
     }
