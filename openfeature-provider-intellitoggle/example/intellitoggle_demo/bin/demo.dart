@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:intellitoggle_demo/main.dart';
+import '../lib/main.dart';
 
 void main(List<String> arguments) async {
   print('╔════════════════════════════════════════════════╗');

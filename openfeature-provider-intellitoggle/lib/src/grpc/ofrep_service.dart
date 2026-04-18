@@ -3,8 +3,6 @@ import 'dart:convert' as $convert;
 import 'dart:io';
 
 import 'package:grpc/grpc.dart';
-import 'package:openfeature_dart_server_sdk/feature_provider.dart'
-    hide InMemoryProvider;
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 import 'package:openfeature_provider_intellitoggle/src/gen/ofrep.pb.dart'
     as ofrep;
