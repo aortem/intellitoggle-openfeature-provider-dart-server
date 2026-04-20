@@ -228,6 +228,50 @@ void main() {
     });
   });
 
+  group('Telemetry Hook Isolation', () {
+    test('stores evaluation-scoped state per hook invocation', () async {
+      final hook = IntelliToggleTelemetryHook();
+      final firstContext = HookContext(
+        flagKey: 'flag-a',
+        evaluationContext: {'targetingKey': 'user-a'},
+      );
+      final secondContext = HookContext(
+        flagKey: 'flag-b',
+        evaluationContext: {'targetingKey': 'user-b'},
+      );
+
+      await hook.before(firstContext);
+      await hook.before(secondContext);
+
+      await hook.finally_(
+        secondContext,
+        EvaluationDetails(
+          flagKey: 'flag-b',
+          value: true,
+          reason: 'STATIC',
+          evaluationTime: DateTime.now(),
+        ),
+      );
+      await hook.finally_(
+        firstContext,
+        EvaluationDetails(
+          flagKey: 'flag-a',
+          value: true,
+          reason: 'STATIC',
+          evaluationTime: DateTime.now(),
+        ),
+      );
+
+      expect(Telemetry.metrics.counters['feature_flag.evaluation_count'], 2);
+      expect(
+        Telemetry.metrics.counters['feature_flag.evaluation_success_count'],
+        2,
+      );
+      expect(Telemetry.metrics.latencyHistogram['flag-a'], isNotEmpty);
+      expect(Telemetry.metrics.latencyHistogram['flag-b'], isNotEmpty);
+    });
+  });
+
   group('Span Events', () {
     test('span events are created for evaluation errors', () async {
       Telemetry.enableDebugMode(); // Enable logging

@@ -26,8 +26,8 @@ Add to your server-side Dart project:
 
 ```yaml
 dependencies:
-  openfeature_dart_server_sdk: ^0.0.17
-  openfeature_provider_intellitoggle: ^0.0.8
+  openfeature_dart_server_sdk: ^0.0.19
+  openfeature_provider_intellitoggle: ^0.0.9
 ```
 
 Then install:
@@ -58,7 +58,7 @@ void main() async {
   print('✓ Provider initialized successfully!\n');
 
   final api = OpenFeatureAPI();
-  api.setProvider(provider);
+  await api.setProvider(provider);
 
   // Evaluate a boolean flag
   // result.flagKey, result.value, result.evaluatedAt, result.reason
@@ -83,7 +83,6 @@ void main() async {
 ## 🧪 IntelliToggleClient Test
 
 ```dart
-import 'package:openfeature_dart_server_sdk/hooks.dart';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 
 void main() async {
@@ -103,7 +102,7 @@ void main() async {
   print('✓ Provider initialized successfully!\n');
 
   final api = OpenFeatureAPI();
-  api.setProvider(provider);
+  await api.setProvider(provider);
 
   // Create a client
   final clientMetadata = ClientMetadata(name: 'test-client', version: '0.0.1');
@@ -145,7 +144,6 @@ Use the included `InMemoryProvider` for fast testing without external dependenci
 
 ```dart
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
-import 'package:openfeature_dart_server_sdk/hooks.dart';
 
 void main() async {
   print('Starting IntelliToggle provider test with InMemoryProvider...\n');
@@ -157,7 +155,7 @@ void main() async {
   print('✓ Provider initialized successfully!\n');
 
   final api = OpenFeatureAPI();
-  api.setProvider(provider);
+  await api.setProvider(provider);
 
   // Create a client
   final clientMetadata = ClientMetadata(name: 'test-client', version: '0.0.1');
@@ -253,6 +251,34 @@ final result = await client.getBooleanValue(
   targetingKey: 'user-123',
   evaluationContext: {'region': 'us-east-1'},
 );
+```
+
+---
+
+## Multi-Provider Fallback
+
+You can compose IntelliToggle with other providers using the re-exported
+OpenFeature multi-provider helpers:
+
+```dart
+import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
+
+Future<void> main() async {
+  final primary = IntelliToggleProvider(
+    clientId: 'client_id',
+    clientSecret: 'client_secret',
+    tenantId: 'tenant_id',
+  );
+
+  final fallback = InMemoryProvider()..setFlag('new-dashboard', false);
+
+  final provider = MultiProvider(
+    providers: [primary, fallback],
+    strategy: FirstMatchStrategy(),
+  );
+
+  await OpenFeatureAPI().setProvider(provider);
+}
 ```
 
 ---

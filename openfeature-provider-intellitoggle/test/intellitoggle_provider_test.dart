@@ -21,7 +21,7 @@ void main() {
         await provider.initialize();
 
         final api = OpenFeatureAPI();
-        api.setProvider(provider);
+        await api.setProvider(provider);
 
         final booleanResult = await provider.getBooleanFlag(
           'new-dashboard-ui',

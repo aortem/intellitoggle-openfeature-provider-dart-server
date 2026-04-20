@@ -15,10 +15,8 @@ void main() {
     final provider = InMemoryProvider();
     provider.setFlag('test-flag', true);
 
-    
     // Build HookManager with telemetry hook
-    final hookManager = HookManager()
-      ..addHook(IntelliToggleTelemetryHook());
+    final hookManager = HookManager()..addHook(IntelliToggleTelemetryHook());
 
     // Build FeatureClient from SDK
     final featureClient = FeatureClient(
@@ -49,10 +47,19 @@ void main() {
 
     // ✅ Assertions
     expect(value, true);
-    expect(Telemetry.metrics.counters['feature_flag.evaluation_count'], greaterThan(0));
-    expect(Telemetry.metrics.counters['feature_flag.evaluation_success_count'], greaterThan(0));
+    expect(
+      Telemetry.metrics.counters['feature_flag.evaluation_count'],
+      greaterThan(0),
+    );
+    expect(
+      Telemetry.metrics.counters['feature_flag.evaluation_success_count'],
+      greaterThan(0),
+    );
     expect(Telemetry.metrics.latencyHistogram['test-flag'], isNotEmpty);
-    expect(Telemetry.metrics.latencyHistogram['test-flag'], isA<Map<int, int>>());
+    expect(
+      Telemetry.metrics.latencyHistogram['test-flag'],
+      isA<Map<int, int>>(),
+    );
 
     print('\n✅ All tests passed!');
   });

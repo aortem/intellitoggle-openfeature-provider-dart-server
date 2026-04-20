@@ -1,6 +1,5 @@
 // test.dart
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
-import 'package:openfeature_dart_server_sdk/hooks.dart';
 
 void main() async {
   print('Starting IntelliToggle provider test with InMemoryProvider...\n');
@@ -12,7 +11,7 @@ void main() async {
   print('✓ Provider initialized successfully!\n');
 
   final api = OpenFeatureAPI();
-  api.setProvider(provider);
+  await api.setProvider(provider);
 
   // Create a client
   final clientMetadata = ClientMetadata(name: 'test-client', version: '0.0.1');

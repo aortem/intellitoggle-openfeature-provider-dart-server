@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
-import 'package:openfeature_dart_server_sdk/hooks.dart';
 
 Future<void> main() async {
   // 1. Configure and register the provider
@@ -14,7 +13,7 @@ Future<void> main() async {
     ),
   );
   final api = OpenFeatureAPI();
-  api.setProvider(provider);
+  await api.setProvider(provider);
 
   // 2. Create a client scoped to your service
   final featureClient = FeatureClient(

@@ -5,39 +5,38 @@ import '../utils/telemetry.dart';
 /// OpenTelemetry-compatible telemetry hook for OpenFeature
 /// Complies with OpenFeature Appendix D and OTel semantic conventions
 class IntelliToggleTelemetryHook extends Hook {
-  TelemetrySpan? _span;
-  DateTime? _startTime;
+  static const String _spanKey = 'span';
+  static const String _startTimeKey = 'start_time';
 
   @override
   HookMetadata get metadata =>
       const HookMetadata(name: 'IntelliToggleTelemetryHook');
 
   @override
-  Future<void> before(HookContext context) async {
-    _startTime = DateTime.now();
+  Future<Map<String, dynamic>?> before(HookContext context) async {
+    final startTime = DateTime.now();
 
     // Start span with OTel naming convention
     final attributes = <String, Object?>{
       'feature_flag.key': context.flagKey,
-      'feature_flag.provider_name': 'IntelliToggle',
+      'feature_flag.provider_name':
+          context.providerMetadata?.name ?? 'IntelliToggle',
     };
 
     // Extract targetingKey from evaluation context map (required by OTel)
-    if (context.evaluationContext != null) {
-      final evalContext = context.evaluationContext;
-
-      // Check for targetingKey in the map
-      if (evalContext is Map<String, dynamic> &&
-          evalContext.containsKey('targetingKey')) {
-        attributes['feature_flag.context.targetingKey'] =
-            evalContext['targetingKey'];
-      }
+    final evalContext = context.evaluationContext;
+    if (evalContext.containsKey('targetingKey')) {
+      attributes['feature_flag.context.targetingKey'] =
+          evalContext['targetingKey'];
     }
 
-    _span = Telemetry.startSpan('feature_flag', attributes: attributes);
+    final span = Telemetry.startSpan('feature_flag', attributes: attributes);
+    context.hookData.set(_spanKey, span);
+    context.hookData.set(_startTimeKey, startTime);
 
     // Increment total evaluation counter
     Telemetry.metrics.increment('feature_flag.evaluation_count');
+    return null;
   }
 
   @override
@@ -57,9 +56,13 @@ class IntelliToggleTelemetryHook extends Hook {
     EvaluationDetails? evaluationDetails, [
     HookHints? hints,
   ]) async {
-    if (_span == null || _startTime == null) return;
+    final span = context.hookData.get(_spanKey);
+    final startTime = context.hookData.get(_startTimeKey);
+    if (span is! TelemetrySpan || startTime is! DateTime) {
+      return;
+    }
 
-    final latency = DateTime.now().difference(_startTime!);
+    final latency = DateTime.now().difference(startTime);
 
     // Record latency in histogram
     Telemetry.recordLatency(context.flagKey, latency);
@@ -69,7 +72,7 @@ class IntelliToggleTelemetryHook extends Hook {
 
     if (isError) {
       // === ERROR PATH ===
-      _span!.setAttribute('feature_flag.evaluation.success', false);
+      span.setAttribute('feature_flag.evaluation.success', false);
 
       // Extract error code and message
       String errorCode = 'GENERAL';
@@ -88,10 +91,10 @@ class IntelliToggleTelemetryHook extends Hook {
         }
       }
 
-      _span!.setAttribute('feature_flag.evaluation.error_code', errorCode);
+      span.setAttribute('feature_flag.evaluation.error_code', errorCode);
 
       // Emit span event for error (Appendix D requirement)
-      _span!.addEvent(
+      span.addEvent(
         'feature_flag.evaluation_error',
         attributes: {'error.type': errorCode, 'error.message': errorMessage},
       );
@@ -99,18 +102,15 @@ class IntelliToggleTelemetryHook extends Hook {
       Telemetry.metrics.increment('feature_flag.evaluation_error_count');
     } else {
       // === SUCCESS PATH ===
-      _span!.setAttribute('feature_flag.evaluation.success', true);
+      span.setAttribute('feature_flag.evaluation.success', true);
 
       // Use evaluationDetails if available (preferred)
       if (evaluationDetails != null) {
         // EvaluationDetails contains: flagKey, value, variant, reason, evaluationTime, additionalDetails
         if (evaluationDetails.variant != null) {
-          _span!.setAttribute(
-            'feature_flag.variant',
-            evaluationDetails.variant,
-          );
+          span.setAttribute('feature_flag.variant', evaluationDetails.variant);
         }
-        _span!.setAttribute(
+        span.setAttribute(
           'feature_flag.evaluation.reason',
           evaluationDetails.reason,
         );
@@ -120,13 +120,13 @@ class IntelliToggleTelemetryHook extends Hook {
         if (additionalDetails != null &&
             additionalDetails['errorCode'] != null) {
           // Found error in additional details
-          _span!.setAttribute('feature_flag.evaluation.success', false);
-          _span!.setAttribute(
+          span.setAttribute('feature_flag.evaluation.success', false);
+          span.setAttribute(
             'feature_flag.evaluation.error_code',
             additionalDetails['errorCode'].toString(),
           );
 
-          _span!.addEvent(
+          span.addEvent(
             'feature_flag.evaluation_error',
             attributes: {
               'error.type': additionalDetails['errorCode'].toString(),
@@ -147,19 +147,19 @@ class IntelliToggleTelemetryHook extends Hook {
         if (result is FlagEvaluationResult) {
           // It's a FlagEvaluationResult object
           if (result.variant != null) {
-            _span!.setAttribute('feature_flag.variant', result.variant);
+            span.setAttribute('feature_flag.variant', result.variant);
           }
-          _span!.setAttribute('feature_flag.evaluation.reason', result.reason);
+          span.setAttribute('feature_flag.evaluation.reason', result.reason);
 
           // Check for error in result
           if (result.errorCode != null) {
-            _span!.setAttribute('feature_flag.evaluation.success', false);
-            _span!.setAttribute(
+            span.setAttribute('feature_flag.evaluation.success', false);
+            span.setAttribute(
               'feature_flag.evaluation.error_code',
               result.errorCode.toString(),
             );
 
-            _span!.addEvent(
+            span.addEvent(
               'feature_flag.evaluation_error',
               attributes: {
                 'error.type': result.errorCode.toString(),
@@ -175,20 +175,19 @@ class IntelliToggleTelemetryHook extends Hook {
           }
         } else {
           // Just the value, use default reason
-          _span!.setAttribute('feature_flag.evaluation.reason', 'STATIC');
+          span.setAttribute('feature_flag.evaluation.reason', 'STATIC');
           Telemetry.metrics.increment('feature_flag.evaluation_success_count');
         }
       } else {
         // No result and no error - count as success with default reason
-        _span!.setAttribute('feature_flag.evaluation.reason', 'DEFAULT');
+        span.setAttribute('feature_flag.evaluation.reason', 'DEFAULT');
         Telemetry.metrics.increment('feature_flag.evaluation_success_count');
       }
     }
 
     // END THE SPAN HERE (critical - must be last)
-    Telemetry.endSpan(_span!);
-
-    _span = null;
-    _startTime = null;
+    Telemetry.endSpan(span);
+    context.hookData.remove(_spanKey);
+    context.hookData.remove(_startTimeKey);
   }
 }

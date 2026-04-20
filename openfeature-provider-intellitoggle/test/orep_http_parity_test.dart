@@ -35,7 +35,11 @@ Future<void> _seedBoolFlag() async {
   final req = await client.postUrl(uri);
   req.headers.contentType = ContentType.json;
   req.headers.add('authorization', 'Bearer $_goodToken');
-  req.write(jsonEncode({'flags': {'bool-flag': true}}));
+  req.write(
+    jsonEncode({
+      'flags': {'bool-flag': true},
+    }),
+  );
   final resp = await req.close();
   await resp.drain();
   client.close();
@@ -75,17 +79,24 @@ void main() {
       // Ensure server has the flag (tests may have reset earlier)
       {
         final client = HttpClient();
-        final seed = await client.postUrl(Uri.parse(_baseUrl('/v1/provider/seed')));
+        final seed = await client.postUrl(
+          Uri.parse(_baseUrl('/v1/provider/seed')),
+        );
         seed.headers.contentType = ContentType.json;
         seed.headers.add('authorization', 'Bearer $_goodToken');
-        seed.write(jsonEncode({'flags': {'bool-flag': true}}));
+        seed.write(
+          jsonEncode({
+            'flags': {'bool-flag': true},
+          }),
+        );
         final seedResp = await seed.close();
         expect(seedResp.statusCode, 200);
       }
       // POST
       final client = HttpClient();
-      final post = await client
-          .postUrl(Uri.parse(_baseUrl('/v1/flags/bool-flag/evaluate')));
+      final post = await client.postUrl(
+        Uri.parse(_baseUrl('/v1/flags/bool-flag/evaluate')),
+      );
       post.headers.contentType = ContentType.json;
       post.headers.add('authorization', 'Bearer $_goodToken');
       post.write(jsonEncode({'defaultValue': false, 'type': 'boolean'}));
@@ -94,8 +105,11 @@ void main() {
       final postJson = jsonDecode(await utf8.decoder.bind(postResp).join());
 
       // GET
-      final get = await client.getUrl(Uri.parse(
-          _baseUrl('/v1/flags/bool-flag/evaluate?type=boolean&default=false')));
+      final get = await client.getUrl(
+        Uri.parse(
+          _baseUrl('/v1/flags/bool-flag/evaluate?type=boolean&default=false'),
+        ),
+      );
       get.headers.add('authorization', 'Bearer $_goodToken');
       final getResp = await get.close();
       expect(getResp.statusCode, 200);
@@ -107,8 +121,9 @@ void main() {
 
     test('Unauthorized returns 401', () async {
       final client = HttpClient();
-      final req = await client
-          .postUrl(Uri.parse(_baseUrl('/v1/flags/bool-flag/evaluate')));
+      final req = await client.postUrl(
+        Uri.parse(_baseUrl('/v1/flags/bool-flag/evaluate')),
+      );
       req.headers.contentType = ContentType.json;
       req.headers.add('authorization', 'Bearer $_badToken');
       req.write(jsonEncode({'defaultValue': false, 'type': 'boolean'}));
@@ -118,8 +133,9 @@ void main() {
 
     test('Unknown flag returns 404', () async {
       final client = HttpClient();
-      final req = await client
-          .postUrl(Uri.parse(_baseUrl('/v1/flags/does-not-exist/evaluate')));
+      final req = await client.postUrl(
+        Uri.parse(_baseUrl('/v1/flags/does-not-exist/evaluate')),
+      );
       req.headers.contentType = ContentType.json;
       req.headers.add('authorization', 'Bearer $_goodToken');
       req.write(jsonEncode({'defaultValue': false, 'type': 'boolean'}));

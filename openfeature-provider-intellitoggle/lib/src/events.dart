@@ -137,19 +137,24 @@ class IntelliToggleEvent {
 /// Manages event broadcasting to subscribers using Dart streams.
 /// Provides a broadcast stream that multiple listeners can subscribe to.
 class IntelliToggleEventEmitter {
-  final StreamController<IntelliToggleEvent> _controller = StreamController<IntelliToggleEvent>.broadcast();
+  final StreamController<IntelliToggleEvent> _controller =
+      StreamController<IntelliToggleEvent>.broadcast();
   final List<StreamSubscription> _subscriptions = [];
   Stream<IntelliToggleEvent> get stream => _controller.stream;
-  StreamSubscription<IntelliToggleEvent> listen(void Function(IntelliToggleEvent) onData) {
+  StreamSubscription<IntelliToggleEvent> listen(
+    void Function(IntelliToggleEvent) onData,
+  ) {
     final sub = _controller.stream.listen(onData);
     _subscriptions.add(sub);
     return sub;
   }
+
   void emit(IntelliToggleEvent event) {
     if (!_controller.isClosed) {
       _controller.add(event);
     }
   }
+
   void dispose() {
     for (final sub in _subscriptions) {
       sub.cancel();
@@ -157,5 +162,6 @@ class IntelliToggleEventEmitter {
     _subscriptions.clear();
     _controller.close();
   }
+
   bool get isClosed => _controller.isClosed;
 }
