@@ -1,4 +1,14 @@
 
+## 0.0.9
+
+### Changed
+
+* Bumped `openfeature_dart_server_sdk` compatibility to `^0.0.19`.
+* Updated the provider and examples for the async `OpenFeatureAPI.setProvider(...)` flow.
+* Re-exported the SDK hook and multi-provider helpers from this package.
+* Hardened `ConsoleLoggingHook` against complex and circular evaluation payloads.
+* Moved telemetry hook span state into evaluation-scoped hook data to avoid cross-request collisions.
+
 ## 0.0.8
 
 ### Changed

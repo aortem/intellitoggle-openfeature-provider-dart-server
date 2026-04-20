@@ -1,6 +1,5 @@
 import 'package:test/test.dart';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
-import 'package:openfeature_dart_server_sdk/hooks.dart';
 
 void main() {
   group('IntelliToggleProvider Integration', () {
@@ -40,7 +39,6 @@ void main() {
       expect(result, anyOf([true, false]));
     });
 
-  
     test('concurrent access: multiple flag evaluations', () async {
       final results = await Future.wait([
         client.getBooleanValue('flag1', false),

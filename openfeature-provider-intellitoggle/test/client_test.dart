@@ -1,6 +1,5 @@
 import 'package:test/test.dart';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
-import 'package:openfeature_dart_server_sdk/hooks.dart';
 
 void main() {
   group('IntelliToggleClient', () {
@@ -58,7 +57,11 @@ void main() {
     test('context building: passes context to provider', () async {
       provider.setFlag('ctx-flag', true);
       final ctx = {'targetingKey': 'user-1', 'email': 'a@b.com'};
-      final result = await client.getBooleanValue('ctx-flag', false, evaluationContext: ctx);
+      final result = await client.getBooleanValue(
+        'ctx-flag',
+        false,
+        evaluationContext: ctx,
+      );
       expect(result, true);
     });
 
@@ -67,9 +70,13 @@ void main() {
       final ctx = {
         'kind': 'multi',
         'user': {'targetingKey': 'user-1'},
-        'org': {'targetingKey': 'org-1'}
+        'org': {'targetingKey': 'org-1'},
       };
-      final result = await client.getStringValue('multi-flag', 'default', evaluationContext: ctx);
+      final result = await client.getStringValue(
+        'multi-flag',
+        'default',
+        evaluationContext: ctx,
+      );
       expect(result, 'multi');
     });
 
@@ -81,7 +88,7 @@ void main() {
     test('error handling: throws on type mismatch', () async {
       provider.setFlag('flag', 123);
       final result = await client.getBooleanValue('flag', false);
-        expect(result, false);
+      expect(result, false);
     });
   });
 }

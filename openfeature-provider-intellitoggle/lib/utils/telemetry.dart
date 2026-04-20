@@ -1,5 +1,5 @@
 /// Internal Telemetry Utility for OpenFeature + OpenTelemetry compatibility.
-/// 
+///
 /// This implementation:
 /// - Contains NO external dependencies (as required by ticket)
 /// - Generates OTel-compliant telemetry signals
@@ -40,7 +40,9 @@ class Telemetry {
     // In production, this would export to OTel collector
     // For now, we log for debugging
     if (_debugMode) {
-      print('[TELEMETRY] Span ended: ${span.name} (${span.duration?.inMilliseconds}ms)');
+      print(
+        '[TELEMETRY] Span ended: ${span.name} (${span.duration?.inMilliseconds}ms)',
+      );
       print('  Attributes: ${span.attributes}');
       if (span.events.isNotEmpty) {
         print('  Events: ${span.events.length}');
@@ -87,11 +89,13 @@ class _TelemetrySpan {
 
   /// Add a span event (required by Appendix D for errors)
   void addEvent(String name, {Map<String, Object?>? attributes}) {
-    events.add(_SpanEvent(
-      name: name,
-      timestamp: DateTime.now(),
-      attributes: attributes ?? {},
-    ));
+    events.add(
+      _SpanEvent(
+        name: name,
+        timestamp: DateTime.now(),
+        attributes: attributes ?? {},
+      ),
+    );
   }
 
   /// Calculate span duration
@@ -125,7 +129,7 @@ class _SpanEvent {
 
 class _TelemetryMetrics {
   final Map<String, int> counters = {};
-  
+
   // Bucketed histogram: flagKey -> {bucket_ms: count}
   // This prevents unbounded memory growth
   final Map<String, Map<int, int>> latencyHistogram = {};
@@ -140,7 +144,7 @@ class _TelemetryMetrics {
   void recordLatency(String flagKey, Duration latency) {
     final ms = latency.inMilliseconds;
     final bucket = _chooseBucketMs(ms);
-    
+
     latencyHistogram.putIfAbsent(flagKey, () => {});
     final map = latencyHistogram[flagKey]!;
     map[bucket] = (map[bucket] ?? 0) + 1;
@@ -168,7 +172,7 @@ class _TelemetryMetrics {
 
     // Calculate total count
     final total = histogram.values.fold<int>(0, (sum, count) => sum + count);
-    
+
     // Calculate cumulative distribution
     final sortedBuckets = histogram.keys.toList()..sort();
     var cumulative = 0;
@@ -177,7 +181,7 @@ class _TelemetryMetrics {
     for (final bucket in sortedBuckets) {
       cumulative += histogram[bucket]!;
       final percentile = (cumulative / total) * 100;
-      
+
       // Record key percentiles
       if (percentile >= 50 && !percentiles.containsKey('p50')) {
         percentiles['p50'] = bucket.toDouble();

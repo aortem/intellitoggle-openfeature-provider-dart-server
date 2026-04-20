@@ -34,7 +34,11 @@ Future<void> _seedBoolFlag() async {
   final req = await client.postUrl(uri);
   req.headers.contentType = ContentType.json;
   req.headers.add('authorization', 'Bearer $_testToken');
-  req.write(jsonEncode({'flags': {'bool-flag': true}}));
+  req.write(
+    jsonEncode({
+      'flags': {'bool-flag': true},
+    }),
+  );
   final resp = await req.close();
   await resp.drain();
   client.close();
@@ -65,10 +69,14 @@ void main() {
 
   test('OREP boolean flag evaluation endpoint returns correct value', () async {
     final client = HttpClient();
-    final req = await client.postUrl(Uri.parse(_baseUrl('/v1/flags/bool-flag/evaluate')));
+    final req = await client.postUrl(
+      Uri.parse(_baseUrl('/v1/flags/bool-flag/evaluate')),
+    );
     req.headers.contentType = ContentType.json;
     req.headers.add('authorization', 'Bearer $_testToken');
-    req.write(jsonEncode({'defaultValue': false, 'type': 'boolean', 'context': {}}));
+    req.write(
+      jsonEncode({'defaultValue': false, 'type': 'boolean', 'context': {}}),
+    );
     final resp = await req.close();
     expect(resp.statusCode, 200);
 
@@ -83,7 +91,9 @@ void main() {
 
   test('OPTSP metadata endpoint returns provider info', () async {
     final client = HttpClient();
-    final req = await client.getUrl(Uri.parse(_baseUrl('/v1/provider/metadata')));
+    final req = await client.getUrl(
+      Uri.parse(_baseUrl('/v1/provider/metadata')),
+    );
     req.headers.add('authorization', 'Bearer $_testToken');
     final resp = await req.close();
     expect(resp.statusCode, 200);
@@ -99,7 +109,11 @@ void main() {
     var req = await client.postUrl(Uri.parse(_baseUrl('/v1/provider/seed')));
     req.headers.contentType = ContentType.json;
     req.headers.add('authorization', 'Bearer $_testToken');
-    req.write(jsonEncode({'flags': {'test-flag': 123}}));
+    req.write(
+      jsonEncode({
+        'flags': {'test-flag': 123},
+      }),
+    );
     var resp = await req.close();
     expect(resp.statusCode, 200);
 
@@ -112,7 +126,9 @@ void main() {
 
   test('OREP returns 400 on invalid JSON', () async {
     final client = HttpClient();
-    final req = await client.postUrl(Uri.parse(_baseUrl('/v1/flags/bool-flag/evaluate')));
+    final req = await client.postUrl(
+      Uri.parse(_baseUrl('/v1/flags/bool-flag/evaluate')),
+    );
     req.headers.contentType = ContentType.json;
     req.headers.add('authorization', 'Bearer $_testToken');
     req.write('not a json');
