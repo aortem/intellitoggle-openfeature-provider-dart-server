@@ -1,4 +1,3 @@
-import 'package:openfeature_dart_server_sdk/hooks.dart';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 import '../config/app_config.dart';
 

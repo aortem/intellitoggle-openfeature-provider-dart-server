@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:openfeature_dart_server_sdk/hooks.dart';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 import 'package:test/test.dart';
 
@@ -22,7 +21,7 @@ void main() {
         await provider.initialize();
 
         final api = OpenFeatureAPI();
-        api.setProvider(provider);
+        await api.setProvider(provider);
 
         final featureClient = FeatureClient(
           metadata: ClientMetadata(name: 'test-client', version: '0.0.1'),

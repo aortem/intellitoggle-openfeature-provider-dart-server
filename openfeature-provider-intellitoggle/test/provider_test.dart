@@ -1,6 +1,5 @@
 import 'package:test/test.dart';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
-import 'package:openfeature_dart_server_sdk/hooks.dart';
 
 void main() {
   group('InMemoryProvider', () {
@@ -177,6 +176,23 @@ void main() {
               m.contains('"flag_key":"test-flag"'),
         ),
         true,
+      );
+    });
+
+    test('serializes circular context without throwing', () async {
+      final circular = <String, dynamic>{};
+      circular['self'] = circular;
+      final context = HookContext(
+        flagKey: 'test-flag',
+        evaluationContext: circular,
+        metadata: {},
+      );
+
+      await hook.before(context);
+
+      expect(
+        logger.messages.any((message) => message.contains('[Circular]')),
+        isTrue,
       );
     });
   });
