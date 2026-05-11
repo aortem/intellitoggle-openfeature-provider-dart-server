@@ -12,7 +12,7 @@ release:
       set -e
       echo "Using bash version: $BASH_VERSION"
 
-      PROJECT_DIRS=$(find . -type f -name "pubspec.yaml" -exec dirname {} \; | sort -u)
+      PROJECT_DIRS=$(find . -type f -name "pubspec.yaml" ! -path "*/example/*" ! -path "*/test/*" -exec dirname {} \; | sort -u)
       echo "Found candidate project directories:"
       echo "$PROJECT_DIRS"
 
