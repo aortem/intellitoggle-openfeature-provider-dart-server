@@ -52,8 +52,8 @@ release:
 
         RELEASES_RESPONSE=$(curl --silent --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
           "https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/releases" || echo "[]")
-        if echo "$RELEASES_RESPONSE" | jq -e 'type == "array"' >/dev/null 2>&1; then
-          LATEST_RELEASE=$(echo "$RELEASES_RESPONSE" | jq -r '.[0].tag_name // ""')
+        if echo "$RELEASES_RESPONSE" | jq -e "type == \"array\"" >/dev/null 2>&1; then
+          LATEST_RELEASE=$(echo "$RELEASES_RESPONSE" | jq -r ".[0].tag_name // \"\"")
         else
           echo "GitLab releases API did not return a release list; continuing without latest release tag."
           LATEST_RELEASE=""
