@@ -81,7 +81,7 @@ validation_trigger_backend:
 
 openfeature_gherkin_conformance:
   stage: gherkin-test
-  image: dart:stable
+  image: dart:3.12.2
   script:
     - cd openfeature-provider-intellitoggle
     - dart pub get
