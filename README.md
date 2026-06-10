@@ -39,7 +39,7 @@ Official IntelliToggle provider for the OpenFeature Dart Server SDK. Enables sec
 
 ## Supported Dart Versions
 
-Compatible with Dart **3.9.2** and above.
+Compatible with Dart **3.12.2** and above.
 
 ---
 
@@ -47,7 +47,7 @@ Compatible with Dart **3.9.2** and above.
 
 ```yaml
 dependencies:
-  openfeature_dart_server_sdk: ^0.0.17
+  openfeature_dart_server_sdk: ^0.0.22
   openfeature_provider_intellitoggle: ^0.0.8
 ```
 

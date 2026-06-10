@@ -26,8 +26,8 @@ Add to your server-side Dart project:
 
 ```yaml
 dependencies:
-  openfeature_dart_server_sdk: ^0.0.19
-  openfeature_provider_intellitoggle: ^0.0.9
+  openfeature_dart_server_sdk: ^0.0.22
+  openfeature_provider_intellitoggle: ^0.0.10
 ```
 
 Then install:
