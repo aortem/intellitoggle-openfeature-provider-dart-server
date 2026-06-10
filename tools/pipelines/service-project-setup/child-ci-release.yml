@@ -12,7 +12,7 @@ release:
       set -e
       echo "Using bash version: $BASH_VERSION"
 
-      PROJECT_DIRS=$(find . -type f -name "pubspec.yaml" -exec dirname {} \; | sort -u)
+      PROJECT_DIRS=$(find . -type f -name "pubspec.yaml" ! -path "*/example/*" ! -path "*/test/*" -exec dirname {} \; | sort -u)
       echo "Found candidate project directories:"
       echo "$PROJECT_DIRS"
 
@@ -50,8 +50,14 @@ release:
         fi
         echo "Latest version on pub.dev for package ${PUB_PACKAGE_NAME}: $PUB_DEV_LATEST"
 
-        LATEST_RELEASE=$(curl --silent --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
-          "https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/releases" | jq -r ".[0].tag_name")
+        RELEASES_RESPONSE=$(curl --silent --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+          "https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/releases" || echo "[]")
+        if echo "$RELEASES_RESPONSE" | jq -e "type == \"array\"" >/dev/null 2>&1; then
+          LATEST_RELEASE=$(echo "$RELEASES_RESPONSE" | jq -r ".[0].tag_name // \"\"")
+        else
+          echo "GitLab releases API did not return a release list; continuing without latest release tag."
+          LATEST_RELEASE=""
+        fi
         echo "Latest GitLab release tag: ${LATEST_RELEASE}"
 
         LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
