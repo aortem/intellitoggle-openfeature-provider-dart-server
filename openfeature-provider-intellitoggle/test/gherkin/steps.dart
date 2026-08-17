@@ -340,23 +340,23 @@ StepDefinitionGeneric whenFlagEvaluatedWithDetails() {
       if (!key.startsWith("missing-") && !key.startsWith("wrong-")) {
         switch (key) {
           case 'boolean-flag':
-            world.provider.setFlag(key, true);
+            world.provider.setFlag(key, true, variant: 'on');
             break;
           case 'string-flag':
-            world.provider.setFlag(key, 'hi');
+            world.provider.setFlag(key, 'hi', variant: 'greeting');
             break;
           case 'integer-flag':
-            world.provider.setFlag(key, 10);
+            world.provider.setFlag(key, 10, variant: 'ten');
             break;
           case 'float-flag':
-            world.provider.setFlag(key, 0.5);
+            world.provider.setFlag(key, 0.5, variant: 'half');
             break;
           case 'object-flag':
             world.provider.setFlag(key, {
               'showImages': true,
               'title': 'Check out these pics!',
               'imagesPerPage': 100,
-            });
+            }, variant: 'template');
             break;
           case 'context-aware':
             var flagValue = "EXTERNAL_DEFAULT_SEED";
@@ -882,12 +882,7 @@ StepDefinitionGeneric thenDetailsShouldMatch() {
 
       expect(details.value, equals(expectedValue));
 
-      final String expectedVariantInGherkin = expectedVariant;
-      if (expectedVariantInGherkin.isNotEmpty) {
-        print(
-          '[INFO] Gherkin step expects variant "$expectedVariantInGherkin", but the current SDK version (0.0.9) for FlagEvaluationResult does not provide a variant. This part of the assertion is skipped.',
-        );
-      }
+      expect(details.variant, equals(expectedVariant));
       expect(details.reason, equals(expectedReason));
     },
   );

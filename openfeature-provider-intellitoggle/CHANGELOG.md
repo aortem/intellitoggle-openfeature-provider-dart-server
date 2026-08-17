@@ -8,6 +8,8 @@
 - Added an optional default environment for server-side evaluations.
 - Enforce OpenFeature type-mismatch fallbacks instead of coercing invalid
   response values.
+- Preserve optional variants in the in-memory provider so detailed evaluation
+  and OpenFeature conformance tests exercise variant propagation.
 - Aligned provider metadata and outbound headers with package version `0.0.10`.
 - Updated to `openfeature_dart_server_sdk` `^0.0.23` and Dart `^3.12.2`.
 
