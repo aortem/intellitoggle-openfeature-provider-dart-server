@@ -74,10 +74,10 @@ void main() {
         context: {'targetingKey': 'user-1'},
       );
 
-      // In CI environments, body may be empty; validate request path/calls and reason
-      expect(result.reason, anyOf('STATIC', 'DEFAULT', 'ERROR'));
-      // Ensure evaluation returned a result without throwing
-      expect(result.reason, isA<String>());
+      expect(result.value, isTrue);
+      expect(result.reason, 'STATIC');
+      expect(result.variant, 'on');
+      expect(result.errorCode, isNull);
       await server.close(force: true);
     });
 
@@ -171,11 +171,13 @@ void main() {
       await provider.initialize({});
       final r1 = await provider.getIntegerFlag('num-flag', 0, context: {});
       final r2 = await provider.getIntegerFlag('num-flag', 0, context: {});
-      expect(r1.reason, anyOf('STATIC', 'DEFAULT', 'ERROR'));
-      expect(r2.reason, anyOf('STATIC', 'DEFAULT', 'ERROR'));
-      // Ensure evaluations completed without throwing; caching behavior is implementation-defined here
-      expect(r1.reason, isA<String>());
-      expect(r2.reason, isA<String>());
+      expect(r1.value, 123);
+      expect(r1.reason, 'STATIC');
+      expect(r1.errorCode, isNull);
+      expect(r2.value, 123);
+      expect(r2.reason, 'STATIC');
+      expect(r2.errorCode, isNull);
+      expect(attempts, 2);
       await server.close(force: true);
     });
 
@@ -241,7 +243,7 @@ void main() {
         );
         // Await the flagEvaluated event
         final ev = await evCompleter.future.timeout(const Duration(seconds: 2));
-        expect(ev.data?['variant'], anyOf('beta', isNull));
+        expect(ev.data?['variant'], 'beta');
         final ctx = ev.data?['context'] as Map<String, dynamic>?;
         expect(ctx, isNotNull);
         if (ctx != null) {

@@ -8,7 +8,7 @@ void main() {
 
     setUp(() async {
       provider = InMemoryProvider();
-      OpenFeatureAPI().setProvider(provider);
+      await provider.initialize();
       final clientMetadata = ClientMetadata(
         name: 'integration-test-client',
         version: '0.0.1',
@@ -22,7 +22,6 @@ void main() {
         defaultContext: defaultEvalContext,
       );
       client = IntelliToggleClient(featureClient);
-      // Optionally set some flags for testing
       provider.setFlag('integration-flag', true);
       provider.setFlag('flag1', true);
       provider.setFlag('flag2', false);
@@ -33,10 +32,8 @@ void main() {
     });
 
     test('end-to-end: evaluates boolean flag', () async {
-      // This test assumes the backend is running and has the flag set
       final result = await client.getBooleanValue('integration-flag', false);
-      // Accept either true or false, since we can't set the flag from here
-      expect(result, anyOf([true, false]));
+      expect(result, isTrue);
     });
 
     test('concurrent access: multiple flag evaluations', () async {
@@ -44,8 +41,7 @@ void main() {
         client.getBooleanValue('flag1', false),
         client.getBooleanValue('flag2', true),
       ]);
-      // Accept any boolean values, since we can't set the flags from here
-      expect(results, everyElement(isA<bool>()));
+      expect(results, [true, false]);
     });
   });
 }

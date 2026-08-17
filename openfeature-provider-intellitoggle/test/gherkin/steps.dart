@@ -216,7 +216,7 @@ class StepWorld extends World {
       );
 
       openFeatureApi = OpenFeatureAPI();
-      openFeatureApi.setProvider(provider);
+      await openFeatureApi.setProviderAndWait(provider);
       print('[StepWorld.performExplicitSetup] Provider set on OpenFeatureAPI.');
 
       final clientMetadata = ClientMetadata(
@@ -988,9 +988,7 @@ StepDefinitionGeneric andVariantAndReasonShouldBe() {
     (expectedVariant, expectedReason, context) async {
       final world = context.world;
       final details = world.lastDetailsResult as FlagEvaluationResult;
-      print(
-        '[INFO] SDK v0.0.9 FlagEvaluationResult does not have a "variant" field. Gherkin variant was "$expectedVariant".',
-      );
+      expect(details.variant, equals(expectedVariant));
       expect(details.reason, equals(expectedReason));
     },
   );
@@ -1089,20 +1087,14 @@ StepDefinitionGeneric andReasonAndErrorCodeShouldBe() {
     (errorType, errorCodeStrFromGherkin, context) async {
       final world = context.world;
       final details = world.lastDetailsResult as FlagEvaluationResult;
-      List<String> possibleErrorReasons = [
-        errorCodeStrFromGherkin.toUpperCase().trim(),
-        "ERROR",
-        "DEFAULT", // Accept DEFAULT as a valid error reason for missing flag
-      ];
-      if (errorType == "missing flag")
-        possibleErrorReasons.add("FLAG_NOT_FOUND");
-      if (errorType == "type mismatch")
-        possibleErrorReasons.add("TYPE_MISMATCH");
+      final expectedErrorCode = errorType == "missing flag"
+          ? ErrorCode.FLAG_NOT_FOUND
+          : ErrorCode.TYPE_MISMATCH;
+      expect(details.reason, "ERROR");
+      expect(details.errorCode, expectedErrorCode);
       expect(
-        possibleErrorReasons.contains(details.reason.toUpperCase().trim()),
-        isTrue,
-        reason:
-            "Reason '${details.reason}' did not match any of: $possibleErrorReasons (Gherkin error '$errorCodeStrFromGherkin').",
+        details.errorCode.toString(),
+        endsWith(errorCodeStrFromGherkin.toUpperCase().trim()),
       );
     },
   );

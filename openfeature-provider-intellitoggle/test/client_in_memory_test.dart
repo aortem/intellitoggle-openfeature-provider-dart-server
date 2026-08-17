@@ -11,7 +11,7 @@ void main() async {
   print('✓ Provider initialized successfully!\n');
 
   final api = OpenFeatureAPI();
-  await api.setProvider(provider);
+  await api.setProviderAndWait(provider);
 
   // Create a client
   final clientMetadata = ClientMetadata(name: 'test-client', version: '0.0.1');
