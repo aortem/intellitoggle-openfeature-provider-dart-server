@@ -13,6 +13,11 @@ void main() {
       stepDefinitions: steps, // From steps.dart
       createWorld: (config) async => StepWorld(),
       order: ExecutionOrder.sequential,
+      reporters: [
+        StdoutReporter(MessageLevel.error),
+        ProgressReporter(),
+        TestRunSummaryReporter(),
+      ],
       tagExpression: null,
       stopAfterTestFailed: true,
       defaultTimeout: const Duration(seconds: 15),

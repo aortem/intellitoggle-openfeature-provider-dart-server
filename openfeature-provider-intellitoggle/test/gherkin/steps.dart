@@ -1111,6 +1111,7 @@ StepDefinitionGeneric whenTypeMismatchEvaluation() {
         '[WHEN_TYPE_MISMATCH_EVALUATION DEBUG] Parsed defaultValue: $defaultValue (Type: ${defaultValue.runtimeType})',
       );
       world.lastDefaultValueUsed = defaultValue; // <-- Add this line
+      world.provider.setFlag(key, 'wrong-type-value');
       try {
         // Use provider.getIntegerFlag to get details (value + reason)
         world.lastDetailsResult = await world.provider.getIntegerFlag(
