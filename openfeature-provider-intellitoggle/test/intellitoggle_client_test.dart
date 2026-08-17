@@ -21,7 +21,7 @@ void main() {
         await provider.initialize();
 
         final api = OpenFeatureAPI();
-        await api.setProvider(provider);
+        await api.setProviderAndWait(provider);
 
         final featureClient = FeatureClient(
           metadata: ClientMetadata(name: 'test-client', version: '0.0.1'),

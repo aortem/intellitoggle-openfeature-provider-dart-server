@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'version.dart';
+
 /// Configuration options for the IntelliToggle provider
 ///
 /// Defines connection settings, timeouts, polling behavior, and other
@@ -69,6 +71,10 @@ class IntelliToggleOptions {
   /// Optional OFREP-specific auth token; falls back to provider credentials
   final String? ofrepAuthToken;
 
+  /// IntelliToggle environment supplied when an evaluation context does not
+  /// already include one.
+  final String? environment;
+
   /// Creates a new IntelliToggleOptions instance
   ///
   /// All parameters are optional and have sensible defaults for production use.
@@ -88,6 +94,7 @@ class IntelliToggleOptions {
     bool? useOfrep,
     Uri? ofrepBaseUri,
     String? ofrepAuthToken,
+    String? environment,
   }) : baseUri = baseUri ?? Uri.parse('https://api.intellitoggle.com'),
        timeout = timeout ?? const Duration(seconds: 10),
        headers = headers ?? const {},
@@ -100,10 +107,13 @@ class IntelliToggleOptions {
        initializationTimeout =
            initializationTimeout ?? const Duration(seconds: 30),
        cacheTtl = cacheTtl ?? Duration.zero,
-       userAgent = userAgent ?? 'IntelliToggle-Dart-SDK/1.0.0',
+       userAgent =
+           userAgent ??
+           'IntelliToggle-OpenFeature-Dart/$intelliToggleProviderVersion',
        useOfrep = useOfrep ?? false,
        ofrepBaseUri = ofrepBaseUri,
-       ofrepAuthToken = ofrepAuthToken;
+       ofrepAuthToken = ofrepAuthToken,
+       environment = environment;
 
   /// Create a copy of this options object with modified values
   ///
@@ -124,6 +134,7 @@ class IntelliToggleOptions {
     bool? useOfrep,
     Uri? ofrepBaseUri,
     String? ofrepAuthToken,
+    String? environment,
   }) {
     return IntelliToggleOptions(
       baseUri: baseUri ?? this.baseUri,
@@ -142,6 +153,7 @@ class IntelliToggleOptions {
       useOfrep: useOfrep ?? this.useOfrep,
       ofrepBaseUri: ofrepBaseUri ?? this.ofrepBaseUri,
       ofrepAuthToken: ofrepAuthToken ?? this.ofrepAuthToken,
+      environment: environment ?? this.environment,
     );
   }
 
