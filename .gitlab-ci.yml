@@ -94,6 +94,18 @@ openfeature_gherkin_conformance:
   rules:
     - when: always
 
+openfeature_client_provider_validation:
+  stage: validation
+  image: dart:stable
+  script:
+    - dart pub get
+    - cd packages/client
+    - dart format --output=none --set-exit-if-changed lib test
+    - dart analyze
+    - dart test
+  rules:
+    - when: always
+
 # Release Triggers
 gitlab_github_release:
   stage: release
