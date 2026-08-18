@@ -1,0 +1,8 @@
+name: intellitoggle_openfeature_providers
+publish_to: none
+
+environment:
+  sdk: ^3.12.2
+
+workspace:
+  - packages/*
