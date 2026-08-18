@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import 'options.dart';
+import 'version.dart';
 
 /// HTTP utilities and helper functions for IntelliToggle API communication
 class IntelliToggleUtils {
@@ -48,16 +49,10 @@ class IntelliToggleUtils {
       return _accessToken!;
     }
 
-    // Build the token URL correctly
-    final baseUrlStr = _options.baseUri.toString().replaceAll(
-      RegExp(r'/$'),
-      '',
-    );
-    final tokenUrl = Uri.parse('$baseUrlStr/oauth/token');
+    final tokenUrl = _options.baseUri.resolve('/api/v1/oauth/token');
 
     if (_options.enableLogging) {
       print('[IntelliToggle] Requesting OAuth2 token from: $tokenUrl');
-      print('[IntelliToggle] Client ID: $clientId');
       print('[IntelliToggle] Tenant ID: $tenantId');
     }
 
@@ -68,25 +63,35 @@ class IntelliToggleUtils {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-Tenant-ID': tenantId,
           },
-          body:
-              'grant_type=client_credentials'
-              '&client_id=$clientId'
-              '&client_secret=$clientSecret'
-              '&scope=flags:read flags:evaluate',
+          body: {
+            'grant_type': 'client_credentials',
+            'client_id': clientId,
+            'client_secret': clientSecret,
+            'scope': 'flags:read flags:evaluate',
+          },
         )
         .timeout(_options.timeout);
 
     if (_options.enableLogging) {
       print('[IntelliToggle] OAuth2 response status: ${response.statusCode}');
       if (response.statusCode != 200) {
-        print('[IntelliToggle] OAuth2 error body: ${response.body}');
+        print(
+          '[IntelliToggle] OAuth2 error body: '
+          '${_sanitizeError(response.body)}',
+        );
       }
     }
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      _accessToken = data['access_token'] as String;
-      final expiresIn = data['expires_in'] as int? ?? 3600; // Default 1 hour
+      final accessToken = data['access_token'];
+      if (accessToken is! String || accessToken.isEmpty) {
+        throw AuthenticationException(
+          'OAuth2 response did not contain a valid access token',
+        );
+      }
+      _accessToken = accessToken;
+      final expiresIn = (data['expires_in'] as num?)?.toInt() ?? 3600;
       _tokenExpiry = DateTime.now().add(Duration(seconds: expiresIn));
 
       if (_options.enableLogging) {
@@ -98,7 +103,8 @@ class IntelliToggleUtils {
       return _accessToken!;
     } else {
       throw AuthenticationException(
-        'OAuth2 failed: ${response.statusCode} - ${response.body}\n',
+        'OAuth2 failed: ${response.statusCode} - '
+        '${_sanitizeError(response.body)}',
       );
     }
   }
@@ -112,7 +118,7 @@ class IntelliToggleUtils {
       'User-Agent': _options.userAgent,
       'Accept': 'application/json',
       'X-Tenant-ID': tenantId,
-      'X-SDK-Version': '1.0.0',
+      'X-SDK-Version': intelliToggleProviderVersion,
       'X-SDK-Language': 'dart',
       ..._options.headers,
     };
@@ -124,7 +130,7 @@ class IntelliToggleUtils {
       'Content-Type': 'application/json',
       'User-Agent': _options.userAgent,
       'Accept': 'application/json',
-      'X-SDK-Version': '1.0.0',
+      'X-SDK-Version': intelliToggleProviderVersion,
       'X-SDK-Language': 'dart',
       if (tenantId.isNotEmpty) 'X-Tenant-ID': tenantId,
       if (_options.ofrepAuthToken != null &&
@@ -172,7 +178,7 @@ class IntelliToggleUtils {
         // Use POST request to evaluate flag with context
         final response = await _makeRequest(
           'POST',
-          '/api/flags/$flagKey/evaluate',
+          '/api/v1/flags/${Uri.encodeComponent(flagKey)}/evaluate',
           headers: headers,
           body: jsonEncode(context),
         );
@@ -205,7 +211,8 @@ class IntelliToggleUtils {
           continue;
         } else {
           throw ApiException(
-            'API request failed: ${response.statusCode} - ${response.body}',
+            'API request failed: ${response.statusCode} - '
+            '${_sanitizeError(response.body)}',
             code: response.statusCode.toString(),
           );
         }

@@ -216,7 +216,7 @@ class StepWorld extends World {
       );
 
       openFeatureApi = OpenFeatureAPI();
-      openFeatureApi.setProvider(provider);
+      await openFeatureApi.setProviderAndWait(provider);
       print('[StepWorld.performExplicitSetup] Provider set on OpenFeatureAPI.');
 
       final clientMetadata = ClientMetadata(
@@ -340,23 +340,23 @@ StepDefinitionGeneric whenFlagEvaluatedWithDetails() {
       if (!key.startsWith("missing-") && !key.startsWith("wrong-")) {
         switch (key) {
           case 'boolean-flag':
-            world.provider.setFlag(key, true);
+            world.provider.setFlag(key, true, variant: 'on');
             break;
           case 'string-flag':
-            world.provider.setFlag(key, 'hi');
+            world.provider.setFlag(key, 'hi', variant: 'greeting');
             break;
           case 'integer-flag':
-            world.provider.setFlag(key, 10);
+            world.provider.setFlag(key, 10, variant: 'ten');
             break;
           case 'float-flag':
-            world.provider.setFlag(key, 0.5);
+            world.provider.setFlag(key, 0.5, variant: 'half');
             break;
           case 'object-flag':
             world.provider.setFlag(key, {
               'showImages': true,
               'title': 'Check out these pics!',
               'imagesPerPage': 100,
-            });
+            }, variant: 'template');
             break;
           case 'context-aware':
             var flagValue = "EXTERNAL_DEFAULT_SEED";
@@ -882,12 +882,7 @@ StepDefinitionGeneric thenDetailsShouldMatch() {
 
       expect(details.value, equals(expectedValue));
 
-      final String expectedVariantInGherkin = expectedVariant;
-      if (expectedVariantInGherkin.isNotEmpty) {
-        print(
-          '[INFO] Gherkin step expects variant "$expectedVariantInGherkin", but the current SDK version (0.0.9) for FlagEvaluationResult does not provide a variant. This part of the assertion is skipped.',
-        );
-      }
+      expect(details.variant, equals(expectedVariant));
       expect(details.reason, equals(expectedReason));
     },
   );
@@ -988,9 +983,7 @@ StepDefinitionGeneric andVariantAndReasonShouldBe() {
     (expectedVariant, expectedReason, context) async {
       final world = context.world;
       final details = world.lastDetailsResult as FlagEvaluationResult;
-      print(
-        '[INFO] SDK v0.0.9 FlagEvaluationResult does not have a "variant" field. Gherkin variant was "$expectedVariant".',
-      );
+      expect(details.variant, equals(expectedVariant));
       expect(details.reason, equals(expectedReason));
     },
   );
@@ -1089,20 +1082,14 @@ StepDefinitionGeneric andReasonAndErrorCodeShouldBe() {
     (errorType, errorCodeStrFromGherkin, context) async {
       final world = context.world;
       final details = world.lastDetailsResult as FlagEvaluationResult;
-      List<String> possibleErrorReasons = [
-        errorCodeStrFromGherkin.toUpperCase().trim(),
-        "ERROR",
-        "DEFAULT", // Accept DEFAULT as a valid error reason for missing flag
-      ];
-      if (errorType == "missing flag")
-        possibleErrorReasons.add("FLAG_NOT_FOUND");
-      if (errorType == "type mismatch")
-        possibleErrorReasons.add("TYPE_MISMATCH");
+      final expectedErrorCode = errorType == "missing flag"
+          ? ErrorCode.FLAG_NOT_FOUND
+          : ErrorCode.TYPE_MISMATCH;
+      expect(details.reason, "ERROR");
+      expect(details.errorCode, expectedErrorCode);
       expect(
-        possibleErrorReasons.contains(details.reason.toUpperCase().trim()),
-        isTrue,
-        reason:
-            "Reason '${details.reason}' did not match any of: $possibleErrorReasons (Gherkin error '$errorCodeStrFromGherkin').",
+        details.errorCode.toString(),
+        endsWith(errorCodeStrFromGherkin.toUpperCase().trim()),
       );
     },
   );
@@ -1124,6 +1111,7 @@ StepDefinitionGeneric whenTypeMismatchEvaluation() {
         '[WHEN_TYPE_MISMATCH_EVALUATION DEBUG] Parsed defaultValue: $defaultValue (Type: ${defaultValue.runtimeType})',
       );
       world.lastDefaultValueUsed = defaultValue; // <-- Add this line
+      world.provider.setFlag(key, 'wrong-type-value');
       try {
         // Use provider.getIntegerFlag to get details (value + reason)
         world.lastDetailsResult = await world.provider.getIntegerFlag(

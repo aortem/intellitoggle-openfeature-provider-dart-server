@@ -21,6 +21,15 @@ void main() {
       expect(result.value, 'hello');
     });
 
+    test('preserves an OpenFeature variant', () async {
+      provider.setFlag('rollout', true, variant: 'enabled');
+
+      final result = await provider.getBooleanFlag('rollout', false);
+
+      expect(result.value, isTrue);
+      expect(result.variant, 'enabled');
+    });
+
     test('emits configuration changed event on set and remove', () async {
       final events = <IntelliToggleEvent>[];
       final sub = provider.events.listen(events.add);
