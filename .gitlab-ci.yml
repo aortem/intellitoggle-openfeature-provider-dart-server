@@ -83,13 +83,13 @@ openfeature_gherkin_conformance:
   stage: gherkin-test
   image: dart:stable
   script:
-    - cd openfeature-provider-intellitoggle
+    - cd packages/server
     - dart pub get
     - dart test test/gherkin/gherkin_suite_test.dart --concurrency=1
   artifacts:
     when: always
     reports:
-      junit: build/test-results.xml
+      junit: packages/server/build/test-results.xml
     expire_in: 1h
   rules:
     - when: always

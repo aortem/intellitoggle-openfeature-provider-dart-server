@@ -57,10 +57,12 @@ Set up your environment by:
 
 ## Running Tests
 
-Run the full test suite locally with:
+Resolve the workspace and run the server provider test suite locally with:
 
 ```bash
 dart pub get
+dart pub workspace list
+cd packages/server
 dart test
 ```
 

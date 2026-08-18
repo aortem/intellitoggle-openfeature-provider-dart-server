@@ -1,6 +1,5 @@
 # cloudbuild.yaml
-options:
-  logsBucket: gs://openfeature-provider-intellitoggle-pub-dev-publish
+logsBucket: gs://openfeature-provider-intellitoggle-pub-dev-publish
 
 steps:
 - id: Create temporary token
@@ -17,6 +16,7 @@ steps:
   - PROJECT_ID=$PROJECT_ID
 - id: Publish to pub.dev
   name: dart
+  dir: packages/server
   volumes:
   - name: temporary-secrets
     path: /secrets

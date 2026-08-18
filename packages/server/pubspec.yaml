@@ -7,6 +7,8 @@ repository: https://github.com/aortem/intellitoggle-openfeature-provider-dart-se
 environment:
   sdk: ^3.12.2
 
+resolution: workspace
+
 dependencies:
   openfeature_dart_server_sdk: ^0.0.23
   http: ^1.6.0
@@ -18,6 +20,7 @@ dependencies:
 
 dev_dependencies:
   ds_tools_testing: ^0.1.4 #Standard Dart Team Testing Tools
+  frontend_server_client: ^4.0.0 # Required by the Dart 3.12 test runner.
   gherkin: ^3.1.0
-  test: ^1.28.0
+  test: ^1.31.2
   path: ^1.9.1
