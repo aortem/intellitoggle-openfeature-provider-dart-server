@@ -1,8 +1,17 @@
 ## 0.0.10
 
-- Bumped package metadata for the Dart 3.12.2 upgrade pass.
-- Updated the Dart SDK constraint to `^3.12.2` for the Dart 3.12 release line.
-- Refreshed dependency resolution with the current Dart/Flutter tooling where applicable.
+- Corrected IntelliToggle OAuth and flag evaluation routes to the canonical
+  `/api/v1` endpoints.
+- Send evaluation attributes as IntelliToggle's top-level context contract,
+  preserve JSON-compatible and dotted attributes, and remove declared private
+  attributes before transmission.
+- Added an optional default environment for server-side evaluations.
+- Enforce OpenFeature type-mismatch fallbacks instead of coercing invalid
+  response values.
+- Preserve optional variants in the in-memory provider so detailed evaluation
+  and OpenFeature conformance tests exercise variant propagation.
+- Aligned provider metadata and outbound headers with package version `0.0.10`.
+- Updated to `openfeature_dart_server_sdk` `^0.0.23` and Dart `^3.12.2`.
 
 
 ## 0.0.9

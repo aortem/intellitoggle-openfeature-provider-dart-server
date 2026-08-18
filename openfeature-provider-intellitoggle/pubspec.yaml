@@ -8,7 +8,7 @@ environment:
   sdk: ^3.12.2
 
 dependencies:
-  openfeature_dart_server_sdk: ^0.0.22
+  openfeature_dart_server_sdk: ^0.0.23
   http: ^1.6.0
   meta: ^1.17.0
   jwt_generator: ^0.0.9

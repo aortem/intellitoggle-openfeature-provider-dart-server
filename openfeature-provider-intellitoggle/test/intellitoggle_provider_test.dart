@@ -21,14 +21,13 @@ void main() {
         await provider.initialize();
 
         final api = OpenFeatureAPI();
-        await api.setProvider(provider);
+        await api.setProviderAndWait(provider);
 
         final booleanResult = await provider.getBooleanFlag(
           'new-dashboard-ui',
           false,
         );
-        expect(booleanResult.value, isA<bool>());
-        expect(booleanResult.reason, isA<String>());
+        expect(booleanResult.errorCode, isNull);
 
         final contextualResult = await provider.getBooleanFlag(
           'test-flag',
@@ -40,31 +39,29 @@ void main() {
             'role': 'admin',
           },
         );
-        expect(contextualResult.value, isA<bool>());
-        expect(contextualResult.reason, isA<String>());
+        expect(contextualResult.errorCode, isNull);
 
         final missingFlagResult = await provider.getBooleanFlag(
           'missing-flag',
           true,
           context: {'targetingKey': 'user-456'},
         );
-        expect(missingFlagResult.value, isA<bool>());
-        expect(missingFlagResult.reason, isA<String>());
+        expect(missingFlagResult.value, isTrue);
+        expect(missingFlagResult.reason, 'ERROR');
+        expect(missingFlagResult.errorCode, ErrorCode.FLAG_NOT_FOUND);
 
         final themeConfigResult = await provider.getStringFlag(
           'theme-config',
           'light',
           context: {'targetingKey': 'user-789', 'kind': 'user'},
         );
-        expect(themeConfigResult.value, isA<String>());
-        expect(themeConfigResult.reason, isA<String>());
+        expect(themeConfigResult.errorCode, isNull);
 
         final welcomeMessageResult = await provider.getStringFlag(
           'welcome-message',
           'Message',
         );
-        expect(welcomeMessageResult.value, isA<String>());
-        expect(welcomeMessageResult.reason, isA<String>());
+        expect(welcomeMessageResult.errorCode, isNull);
       },
       skip: config.skipReason,
     );

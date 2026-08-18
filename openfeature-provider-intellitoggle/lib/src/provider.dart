@@ -6,6 +6,7 @@ import 'options.dart';
 import 'utils.dart';
 import 'context.dart';
 import 'events.dart';
+import 'version.dart';
 
 /// New IntelliToggle provider implementation with corrected API endpoints
 class IntelliToggleProvider implements FeatureProvider {
@@ -20,6 +21,7 @@ class IntelliToggleProvider implements FeatureProvider {
   ProviderState _state = ProviderState.NOT_READY;
   Timer? _pollingTimer;
   final Completer<void> _initCompleter = Completer<void>();
+  bool _initializationStarted = false;
 
   // Local cache for flags
   Map<String, dynamic> _localFlags = {};
@@ -50,8 +52,8 @@ class IntelliToggleProvider implements FeatureProvider {
   @override
   ProviderMetadata get metadata => ProviderMetadata(
     name: 'IntelliToggle',
-    version: '1.0.0',
-    attributes: const {'platform': 'dart', 'endpoint-version': 'corrected'},
+    version: intelliToggleProviderVersion,
+    attributes: const {'platform': 'dart', 'endpoint-version': 'v1'},
   );
 
   @override
@@ -62,15 +64,21 @@ class IntelliToggleProvider implements FeatureProvider {
 
   @override
   Future<void> initialize([Map<String, dynamic>? context]) async {
-    if (_initCompleter.isCompleted) return _initCompleter.future;
-    if (_state == ProviderState.READY || _state == ProviderState.ERROR) {
+    if (_state == ProviderState.SHUTDOWN) {
+      throw StateError('Cannot initialize a provider after shutdown');
+    }
+    if (_initializationStarted || _initCompleter.isCompleted) {
       return _initCompleter.future;
     }
+    _initializationStarted = true;
 
     _state = ProviderState.NOT_READY;
     try {
       _eventEmitter.emit(IntelliToggleEvent.initializing());
       await _testConnection();
+      if (_state == ProviderState.SHUTDOWN) {
+        return _initCompleter.future;
+      }
 
       if (_options.enableLogging) {
         print('[IntelliToggle] Provider initialized successfully');
@@ -80,14 +88,16 @@ class IntelliToggleProvider implements FeatureProvider {
       _eventEmitter.emit(IntelliToggleEvent.ready());
 
       _initCompleter.complete();
-    } catch (error) {
-      _state = ProviderState.ERROR;
+    } catch (error, stackTrace) {
+      if (_state != ProviderState.SHUTDOWN) {
+        _state = ProviderState.ERROR;
+      }
       final sanitized = _sanitizeError(error);
       _eventEmitter.emit(IntelliToggleEvent.error(sanitized));
       if (!_initCompleter.isCompleted) {
-        _initCompleter.completeError(sanitized);
+        _initCompleter.completeError(error, stackTrace);
       }
-      rethrow;
+      return _initCompleter.future;
     }
     return _initCompleter.future;
   }
@@ -103,8 +113,10 @@ class IntelliToggleProvider implements FeatureProvider {
     _eventEmitter.emit(IntelliToggleEvent.shutdown());
     _eventEmitter.dispose();
     _httpClient.close();
-    if (!_initCompleter.isCompleted) {
-      _initCompleter.completeError('Shutdown before initialization completed');
+    if (_initializationStarted && !_initCompleter.isCompleted) {
+      _initCompleter.completeError(
+        StateError('Shutdown before initialization completed'),
+      );
     }
   }
 
@@ -185,6 +197,12 @@ class IntelliToggleProvider implements FeatureProvider {
       }
 
       final processedContext = _contextProcessor.processContext(context ?? {});
+      final environment = _options.environment;
+      if (environment != null &&
+          environment.isNotEmpty &&
+          !processedContext.containsKey('environment')) {
+        processedContext['environment'] = environment;
+      }
 
       final response = _options.useOfrep
           ? await _utils.evaluateFlagOfrep(
@@ -214,50 +232,19 @@ class IntelliToggleProvider implements FeatureProvider {
         }
       }
 
-      final dynamic rawValue = response['value'];
-      T value;
-
-      try {
-        switch (valueType) {
-          case 'boolean':
-            value = (rawValue is bool ? rawValue : (rawValue == true)) as T;
-            break;
-          case 'string':
-            value = (rawValue?.toString() ?? '') as T;
-            break;
-          case 'integer':
-            if (rawValue is int) {
-              value = rawValue as T;
-            } else if (rawValue is num) {
-              value = rawValue.toInt() as T;
-            } else {
-              throw TypeMismatchException('Expected integer');
-            }
-            break;
-          case 'double':
-            if (rawValue is double) {
-              value = rawValue as T;
-            } else if (rawValue is num) {
-              value = rawValue.toDouble() as T;
-            } else {
-              throw TypeMismatchException('Expected double');
-            }
-            break;
-          case 'object':
-            if (rawValue is Map<String, dynamic>) {
-              value = rawValue as T;
-            } else if (rawValue is Map) {
-              value = Map<String, dynamic>.from(rawValue) as T;
-            } else {
-              throw TypeMismatchException('Expected object');
-            }
-            break;
-          default:
-            value = (rawValue as T?) ?? defaultValue;
-        }
-      } catch (_) {
-        value = defaultValue;
+      if (errorCode != null) {
+        return FlagEvaluationResult<T>(
+          flagKey: flagKey,
+          value: defaultValue,
+          reason: 'ERROR',
+          errorCode: errorCode,
+          errorMessage: _sanitizeError(response['errorMessage']),
+          evaluatedAt: now,
+          evaluatorId: name,
+        );
       }
+
+      final value = _convertValue<T>(response['value'], valueType);
 
       final eventContext = Map<String, dynamic>.from(processedContext);
       final flagMetadata = response['flagMetadata'];
@@ -275,11 +262,13 @@ class IntelliToggleProvider implements FeatureProvider {
         flagKey: flagKey,
         value: value,
         reason: response['reason']?.toString() ?? 'DEFAULT',
-        variant: response['variant']?.toString(),
+        variant:
+            response['variant']?.toString() ??
+            response['variationId']?.toString(),
         errorCode: errorCode,
         errorMessage: _sanitizeError(response['errorMessage']),
         evaluatedAt: now,
-        evaluatorId: 'IntelliToggle',
+        evaluatorId: name,
       );
 
       _eventEmitter.emit(
@@ -301,7 +290,7 @@ class IntelliToggleProvider implements FeatureProvider {
         errorCode: ErrorCode.FLAG_NOT_FOUND,
         errorMessage: _sanitizeError(error),
         evaluatedAt: DateTime.now(),
-        evaluatorId: 'IntelliToggle',
+        evaluatorId: name,
       );
     } on TypeMismatchException catch (error) {
       return FlagEvaluationResult<T>(
@@ -311,7 +300,7 @@ class IntelliToggleProvider implements FeatureProvider {
         errorCode: ErrorCode.TYPE_MISMATCH,
         errorMessage: _sanitizeError(error),
         evaluatedAt: DateTime.now(),
-        evaluatorId: 'IntelliToggle',
+        evaluatorId: name,
       );
     } catch (error) {
       // Telemetry: error count + latency
@@ -325,8 +314,33 @@ class IntelliToggleProvider implements FeatureProvider {
         errorCode: ErrorCode.GENERAL,
         errorMessage: _sanitizeError(error),
         evaluatedAt: DateTime.now(),
-        evaluatorId: 'IntelliToggle',
+        evaluatorId: name,
       );
+    }
+  }
+
+  T _convertValue<T>(dynamic rawValue, String valueType) {
+    switch (valueType) {
+      case 'boolean':
+        if (rawValue is bool) return rawValue as T;
+        throw TypeMismatchException('Expected boolean');
+      case 'string':
+        if (rawValue is String) return rawValue as T;
+        throw TypeMismatchException('Expected string');
+      case 'integer':
+        if (rawValue is int) return rawValue as T;
+        throw TypeMismatchException('Expected integer');
+      case 'double':
+        if (rawValue is num) return rawValue.toDouble() as T;
+        throw TypeMismatchException('Expected double');
+      case 'object':
+        if (rawValue is Map) {
+          return Map<String, dynamic>.from(rawValue) as T;
+        }
+        throw TypeMismatchException('Expected object');
+      default:
+        if (rawValue is T) return rawValue;
+        throw TypeMismatchException('Unexpected flag value type');
     }
   }
 

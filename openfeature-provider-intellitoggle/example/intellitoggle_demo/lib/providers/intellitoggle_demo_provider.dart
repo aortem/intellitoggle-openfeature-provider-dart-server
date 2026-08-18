@@ -1,4 +1,5 @@
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
+
 import '../config/app_config.dart';
 
 class IntelliToggleDemoProvider {
@@ -9,51 +10,33 @@ class IntelliToggleDemoProvider {
   IntelliToggleDemoProvider(this._config);
 
   Future<void> initialize() async {
-    // Initialize provider with OAuth2 client credentials
     _provider = IntelliToggleProvider(
       clientId: _config.clientId,
       clientSecret: _config.clientSecret,
       tenantId: _config.tenantId,
       options: IntelliToggleOptions(
         baseUri: Uri.parse(_config.baseUrl),
+        environment: 'production',
         timeout: _config.timeout,
         enablePolling: true,
-        pollingInterval: Duration(minutes: 5),
+        pollingInterval: const Duration(minutes: 5),
         enableLogging: true,
       ),
     );
 
-    // Set as global provider
-    await OpenFeatureAPI().setProvider(_provider);
-
-    // Set global context with tenant information
-    OpenFeatureAPI().setGlobalContext(
-      OpenFeatureEvaluationContext({
-        'environment': 'production',
-        'service': 'intellitoggle-demo',
-        'tenantId': _config.tenantId,
-      }),
+    final api = OpenFeatureAPI();
+    await api.setProviderAndWait(_provider);
+    api.setGlobalContext(
+      OpenFeatureEvaluationContext({'service': 'intellitoggle-demo'}),
     );
+    _client = api.getClient('intellitoggle-demo');
 
-    // Create client
-    _client = FeatureClient(
-      metadata: ClientMetadata(name: 'intellitoggle-demo'),
-      hookManager: HookManager(),
-      defaultContext: EvaluationContext(attributes: {}),
-    );
-
-    // Listen to provider events (if supported by IntelliToggle provider)
-    try {
-      _provider.events.listen(_handleProviderEvent);
-    } catch (e) {
-      print('ℹ️  Provider events not available: $e');
-    }
-
-    print('✅ IntelliToggle provider initialized');
+    _provider.events.listen(_handleProviderEvent);
+    print('IntelliToggle provider initialized');
   }
 
   void _handleProviderEvent(dynamic event) {
-    print('🔄 Provider event: $event');
+    print('Provider event: $event');
   }
 
   Future<bool> getBooleanFlag(
@@ -63,20 +46,13 @@ class IntelliToggleDemoProvider {
     Map<String, dynamic>? context,
   }) async {
     try {
-      final attributes = <String, dynamic>{...?context};
-      if (targetingKey != null) {
-        attributes['targetingKey'] = targetingKey;
-      }
-
-      final evaluationContext = EvaluationContext(attributes: attributes);
-
       return await _client.getBooleanFlag(
         flagKey,
-        context: evaluationContext,
+        context: _context(targetingKey, context),
         defaultValue: defaultValue,
       );
-    } catch (e) {
-      print('⚠️  Error evaluating boolean flag "$flagKey": $e');
+    } catch (error) {
+      print('Error evaluating boolean flag "$flagKey": $error');
       return defaultValue;
     }
   }
@@ -88,20 +64,13 @@ class IntelliToggleDemoProvider {
     Map<String, dynamic>? context,
   }) async {
     try {
-      final attributes = <String, dynamic>{...?context};
-      if (targetingKey != null) {
-        attributes['targetingKey'] = targetingKey;
-      }
-
-      final evaluationContext = EvaluationContext(attributes: attributes);
-
       return await _client.getStringFlag(
         flagKey,
-        context: evaluationContext,
+        context: _context(targetingKey, context),
         defaultValue: defaultValue,
       );
-    } catch (e) {
-      print('⚠️  Error evaluating string flag "$flagKey": $e');
+    } catch (error) {
+      print('Error evaluating string flag "$flagKey": $error');
       return defaultValue;
     }
   }
@@ -113,20 +82,13 @@ class IntelliToggleDemoProvider {
     Map<String, dynamic>? context,
   }) async {
     try {
-      final attributes = <String, dynamic>{...?context};
-      if (targetingKey != null) {
-        attributes['targetingKey'] = targetingKey;
-      }
-
-      final evaluationContext = EvaluationContext(attributes: attributes);
-
       return await _client.getIntegerFlag(
         flagKey,
-        context: evaluationContext,
+        context: _context(targetingKey, context),
         defaultValue: defaultValue,
       );
-    } catch (e) {
-      print('⚠️  Error evaluating integer flag "$flagKey": $e');
+    } catch (error) {
+      print('Error evaluating integer flag "$flagKey": $error');
       return defaultValue;
     }
   }
@@ -138,20 +100,13 @@ class IntelliToggleDemoProvider {
     Map<String, dynamic>? context,
   }) async {
     try {
-      final attributes = <String, dynamic>{...?context};
-      if (targetingKey != null) {
-        attributes['targetingKey'] = targetingKey;
-      }
-
-      final evaluationContext = EvaluationContext(attributes: attributes);
-
       return await _client.getDoubleFlag(
         flagKey,
-        context: evaluationContext,
+        context: _context(targetingKey, context),
         defaultValue: defaultValue,
       );
-    } catch (e) {
-      print('⚠️  Error evaluating double flag "$flagKey": $e');
+    } catch (error) {
+      print('Error evaluating double flag "$flagKey": $error');
       return defaultValue;
     }
   }
@@ -163,20 +118,13 @@ class IntelliToggleDemoProvider {
     Map<String, dynamic>? context,
   }) async {
     try {
-      final attributes = <String, dynamic>{...?context};
-      if (targetingKey != null) {
-        attributes['targetingKey'] = targetingKey;
-      }
-
-      final evaluationContext = EvaluationContext(attributes: attributes);
-
       return await _client.getObjectFlag(
         flagKey,
-        context: evaluationContext,
+        context: _context(targetingKey, context),
         defaultValue: defaultValue,
       );
-    } catch (e) {
-      print('⚠️  Error evaluating object flag "$flagKey": $e');
+    } catch (error) {
+      print('Error evaluating object flag "$flagKey": $error');
       return defaultValue;
     }
   }
@@ -185,20 +133,15 @@ class IntelliToggleDemoProvider {
     String? targetingKey,
     Map<String, dynamic>? attributes,
   }) {
-    final contextAttributes = <String, dynamic>{...?attributes};
-    if (targetingKey != null) {
-      contextAttributes['targetingKey'] = targetingKey;
-    }
-
-    return EvaluationContext(attributes: contextAttributes);
+    return _context(targetingKey, attributes);
   }
 
   EvaluationContext createMultiContext({
     Map<String, Map<String, dynamic>>? contexts,
   }) {
-    final defaultContexts =
+    final resolvedContexts =
         contexts ??
-        {
+        const {
           'user': {
             'targetingKey': 'demo-user',
             'role': 'admin',
@@ -211,21 +154,27 @@ class IntelliToggleDemoProvider {
           },
         };
 
-    // Create multi-context attributes
-    final attributes = <String, dynamic>{};
-    for (final entry in defaultContexts.entries) {
-      attributes[entry.key] = entry.value;
-    }
+    return EvaluationContext(
+      attributes: {'kind': 'multi', ...resolvedContexts},
+    );
+  }
 
-    return EvaluationContext(attributes: attributes);
+  EvaluationContext _context(
+    String? targetingKey,
+    Map<String, dynamic>? attributes,
+  ) {
+    return EvaluationContext(
+      targetingKey: targetingKey,
+      attributes: <String, dynamic>{...?attributes},
+    );
   }
 
   Future<void> shutdown() async {
     try {
-      await _provider.shutdown();
-      print('✅ Provider shutdown complete');
-    } catch (e) {
-      print('⚠️  Error during provider shutdown: $e');
+      await OpenFeatureAPI.resetInstance();
+      print('Provider shutdown complete');
+    } catch (error) {
+      print('Error during provider shutdown: $error');
     }
   }
 }

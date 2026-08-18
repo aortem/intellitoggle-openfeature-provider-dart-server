@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 
 Future<void> main() async {
@@ -13,23 +12,13 @@ Future<void> main() async {
     ),
   );
   final api = OpenFeatureAPI();
-  await api.setProvider(provider);
+  await api.setProviderAndWait(provider);
 
   // 2. Create a client scoped to your service
-  final featureClient = FeatureClient(
-    metadata: ClientMetadata(name: 'example-client', version: '1.0.0'),
-    provider: provider,
-    hookManager: HookManager(),
-    defaultContext: EvaluationContext(attributes: {}),
-  );
-  final client = IntelliToggleClient(featureClient);
+  final client = IntelliToggleClient(api.getClient('example-client'));
 
   // 3. Build an evaluation context
-  final ctx = {
-    'kind': 'user',
-    'targetingKey': 'user-123',
-    'email': 'test@example.com',
-  };
+  final ctx = {'targetingKey': 'user-123', 'cohort': 'beta'};
 
   // 4. Evaluate some flags
   final isEnabled = await client.getBooleanValue(
@@ -47,6 +36,6 @@ Future<void> main() async {
   print('welcome-message = $welcomeText');
 
   // 5. Clean up
-  await provider.shutdown();
+  await OpenFeatureAPI.resetInstance();
   print('Shut down provider.');
 }

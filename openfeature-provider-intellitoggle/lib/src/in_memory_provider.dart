@@ -17,6 +17,9 @@ class InMemoryProvider implements FeatureProvider {
   /// Values may be static or context-derived via callbacks.
   final Map<String, dynamic> _flags = {};
 
+  /// Optional OpenFeature variants associated with stored flag values.
+  final Map<String, String> _variants = {};
+
   /// Track all keys ever seen since initialization to satisfy
   /// union-of-all-previous-and-new-keys semantics in change events.
   Set<String> _seenKeys = <String>{};
@@ -58,11 +61,17 @@ class InMemoryProvider implements FeatureProvider {
 
   /// Set or update a flag value.
   ///
-  /// [key] is the flag key, [value] is the flag value (any type).
+  /// [key] is the flag key, [value] is the flag value (any type), and
+  /// [variant] is the optional OpenFeature variant identifier.
   /// Emits a configuration changed event.
-  void setFlag(String key, dynamic value) {
+  void setFlag(String key, dynamic value, {String? variant}) {
     final previous = Set<String>.from(_flags.keys);
     _flags[key] = value;
+    if (variant == null) {
+      _variants.remove(key);
+    } else {
+      _variants[key] = variant;
+    }
     _emitConfigChanged(previous);
   }
 
@@ -72,6 +81,7 @@ class InMemoryProvider implements FeatureProvider {
   void removeFlag(String key) {
     final previous = Set<String>.from(_flags.keys);
     _flags.remove(key);
+    _variants.remove(key);
     _emitConfigChanged(previous);
   }
 
@@ -81,6 +91,7 @@ class InMemoryProvider implements FeatureProvider {
   void clearFlags() {
     final previous = Set<String>.from(_flags.keys);
     _flags.clear();
+    _variants.clear();
     _emitConfigChanged(previous);
   }
 
@@ -176,6 +187,7 @@ class InMemoryProvider implements FeatureProvider {
       evaluatedAt: DateTime.now(),
       evaluatorId: name,
       reason: 'STATIC',
+      variant: _variants[flagKey],
     );
   }
 
@@ -215,6 +227,7 @@ class InMemoryProvider implements FeatureProvider {
       evaluatedAt: DateTime.now(),
       evaluatorId: name,
       reason: 'STATIC',
+      variant: _variants[flagKey],
     );
   }
 
@@ -254,6 +267,7 @@ class InMemoryProvider implements FeatureProvider {
       evaluatedAt: DateTime.now(),
       evaluatorId: name,
       reason: 'STATIC',
+      variant: _variants[flagKey],
     );
   }
 
@@ -293,6 +307,7 @@ class InMemoryProvider implements FeatureProvider {
       evaluatedAt: DateTime.now(),
       evaluatorId: name,
       reason: 'STATIC',
+      variant: _variants[flagKey],
     );
   }
 
@@ -332,6 +347,7 @@ class InMemoryProvider implements FeatureProvider {
       evaluatedAt: DateTime.now(),
       evaluatorId: name,
       reason: 'STATIC',
+      variant: _variants[flagKey],
     );
   }
 

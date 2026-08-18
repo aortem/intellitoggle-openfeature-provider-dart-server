@@ -8,7 +8,7 @@ void main() {
 
     setUp(() async {
       provider = InMemoryProvider();
-      OpenFeatureAPI().setProvider(provider);
+      await provider.initialize();
       final clientMetadata = ClientMetadata(
         name: 'test-client',
         version: '0.0.1',

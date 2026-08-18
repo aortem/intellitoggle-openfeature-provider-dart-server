@@ -1,297 +1,157 @@
-# openfeature_provider_intellitoggle
+# IntelliToggle OpenFeature provider for Dart
 
-An OpenFeature provider for [IntelliToggle](https://intellitoggle.com), enabling Dart backends to evaluate feature flags using the OpenFeature API standard.
+The official server-side Dart provider for
+[IntelliToggle](https://intellitoggle.com), built on the
+[OpenFeature Dart Server SDK](https://pub.dev/packages/openfeature_dart_server_sdk).
 
-This package integrates seamlessly with [`openfeature_dart_server_sdk`](https://pub.dev/packages/openfeature_dart_server_sdk) and supports IntelliToggle's advanced targeting, rule-based rollouts, and experimentation platform.
+The legacy `intellitoggle_server_sdk` package is deprecated. New server
+integrations should use this package.
 
-> This is the canonical and only supported Dart server package for IntelliToggle.
-> The legacy `intellitoggle_server_sdk` package in the monorepo is deprecated and will be removed.
-
----
-
-## 🔧 Features
-
-- ✅ Supports Boolean, String, Number, and Object flag evaluations
-- 📊 Tracking API support (OpenFeature spec Section 6)
-- 🔁 Real-time updates via IntelliToggle event system
-- 🧪 Includes `InMemoryProvider` for local development and testing
-- 🌐 Optional OFREP server support for remote evaluation (e.g. test suites)
-- 📈 OpenTelemetry-compatible telemetry hooks
-
----
-
-## 💻 Installation
-
-Add to your server-side Dart project:
+## Install
 
 ```yaml
 dependencies:
-  openfeature_dart_server_sdk: ^0.0.22
+  openfeature_dart_server_sdk: ^0.0.23
   openfeature_provider_intellitoggle: ^0.0.10
 ```
 
-Then install:
+The provider uses an IntelliToggle OAuth client with `flags:read` and
+`flags:evaluate` scopes. Keep the client secret in a runtime secret manager;
+never ship it in a browser or mobile application.
 
-```bash
-dart pub get
-```
-
----
-
-## 🚀 Getting Started
+## Configure and evaluate
 
 ```dart
-import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
+import 'dart:io';
 
-void main() async {
-  print('Starting IntelliToggle provider with OAuth2 Credentials...\n');
-
-  final provider = IntelliToggleProvider(
-    clientId: "client_id",
-    clientSecret: "cs_secret",
-    tenantId: "tenant_id",
-    options: IntelliToggleOptions(enableLogging: true),
-  );
-
-  print('Provider created, initializing...\n');
-  await provider.initialize();
-  print('✓ Provider initialized successfully!\n');
-
-  final api = OpenFeatureAPI();
-  await api.setProvider(provider);
-
-  // Evaluate a boolean flag
-  // result.flagKey, result.value, result.evaluatedAt, result.reason
-  final result = await provider.getBooleanFlag('new-dashboard', false);
-
-  if (result.errorCode != null) {
-    print('✗ Error Code: ${result.errorCode}');
-    print('✗ Error Message: ${result.errorMessage}');
-  } else {
-    print('');
-    print('Flag value: ${result.value}'); // Flag evaluated value
-  }
-  print('');
-
-  await provider.shutdown();
-  print('✓ Test completed successfully!');
-}
-```
-
----
-
-## 🧪 IntelliToggleClient Test
-
-```dart
-import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
-
-void main() async {
-  print('Starting IntelliClient test with OAuth2...\n');
-
-  final provider = IntelliToggleProvider(
-    clientId: "client_id",
-    clientSecret: "cs_secret",
-    tenantId: "tenant_id",
-    options: IntelliToggleOptions(
-      enableLogging: true,
-    ),
-  );
-
-  print('Provider created, initializing...\n');
-  await provider.initialize();
-  print('✓ Provider initialized successfully!\n');
-
-  final api = OpenFeatureAPI();
-  await api.setProvider(provider);
-
-  // Create a client
-  final clientMetadata = ClientMetadata(name: 'test-client', version: '0.0.1');
-  final hookManager = HookManager();
-  final defaultEvalContext = EvaluationContext(attributes: {});
-  final featureClient = FeatureClient(
-    metadata: clientMetadata,
-    provider: provider,
-    hookManager: hookManager,
-    defaultContext: defaultEvalContext,
-  );
-  final client = IntelliToggleClient(featureClient);
-
-  // Evaluate your feature flags
-  final newFeatureEnabled = await client.getBooleanValue('new-dashboard-ui', false);
-
-  print('Flag value: ${newFeatureEnabled}');
-
-  // Track a user action (OpenFeature spec Section 6)
-  await client.track(
-    'dashboard-viewed',
-    targetingKey: 'user-123',
-    trackingDetails: TrackingEventDetails(
-      value: 1.0,
-      attributes: {'source': 'sidebar'},
-    ),
-  );
-
-  await provider.shutdown();
-  print('✓ Test completed successfully!');
-}
-```
-
----
-
-## 🧪 Local Development & Testing
-
-Use the included `InMemoryProvider` for fast testing without external dependencies:
-
-```dart
-import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
-
-void main() async {
-  print('Starting IntelliToggle provider test with InMemoryProvider...\n');
-
-  final provider = InMemoryProvider();
-
-  print('Provider created, initializing...');
-  await provider.initialize();
-  print('✓ Provider initialized successfully!\n');
-
-  final api = OpenFeatureAPI();
-  await api.setProvider(provider);
-
-  // Create a client
-  final clientMetadata = ClientMetadata(name: 'test-client', version: '0.0.1');
-  final hookManager = HookManager();
-  final defaultEvalContext = EvaluationContext(attributes: {});
-  final featureClient = FeatureClient(
-    metadata: clientMetadata,
-    provider: provider,
-    hookManager: hookManager,
-    defaultContext: defaultEvalContext,
-  );
-  final client = IntelliToggleClient(featureClient);
-
-  provider.setFlag('bool-flag', true);
-
-  // Evaluate your feature flags
-  final newFeatureEnabled = await client.getBooleanValue('bool-flag', false);
-
-  print('Flag value: $newFeatureEnabled'); // true
-
-  await provider.shutdown();
-  print('✓ Test completed successfully!');
-}
-```
-
----
-
-## ⚙️ Remote Evaluation (Optional)
-
-### OREP Server
-
-Start the local remote flag evaluation API:
-
-```bash
-dart run bin/orep_server.dart
-```
-
-Configure using environment variables:
-
-| Variable          | Default          |
-| ----------------- | ---------------- |
-| `OREP_PORT`       | `8080`           |
-| `OREP_HOST`       | `0.0.0.0`        |
-| `OREP_AUTH_TOKEN`  | `changeme-token` |
-
-### OFREP Client (Remote Evaluation)
-
-The provider can call an OFREP-compliant endpoint for remote flag evaluation.
-
-- Enable via options or environment variables.
-- Maps OFREP responses to OpenFeature `ProviderEvaluation` including `value`, `variant`, `reason`, `errorCode`, and `flagMetadata`.
-- Supports retries, timeouts, and optional in-memory cache keyed by `(flagKey + context)`.
-
-Environment variables:
-
-```
-OFREP_ENABLED=true
-OFREP_BASE_URL=https://ofrep.example.com
-OFREP_AUTH_TOKEN=your_bearer_token
-OFREP_TIMEOUT_MS=5000
-OFREP_MAX_RETRIES=3
-OFREP_CACHE_TTL_MS=60000
-```
-
-Code example:
-
-```dart
-final provider = IntelliToggleProvider(
-  clientId: 'client_id',
-  clientSecret: 'cs_secret',
-  tenantId: 'tenant_id',
-  options: IntelliToggleOptions(
-    useOfrep: true,
-    ofrepBaseUri: Uri.parse('https://ofrep.example.com'),
-    cacheTtl: const Duration(minutes: 1),
-    maxRetries: 3,
-    timeout: const Duration(seconds: 5),
-  ),
-);
-await OpenFeatureAPI().setProvider(provider);
-
-final client = IntelliToggleClient(
-  FeatureClient(
-    metadata: ClientMetadata(name: 'service-x'),
-    hookManager: HookManager(),
-    defaultContext: EvaluationContext(attributes: {}),
-  ),
-);
-
-final result = await client.getBooleanValue(
-  'my-flag',
-  false,
-  targetingKey: 'user-123',
-  evaluationContext: {'region': 'us-east-1'},
-);
-```
-
----
-
-## Multi-Provider Fallback
-
-You can compose IntelliToggle with other providers using the re-exported
-OpenFeature multi-provider helpers:
-
-```dart
 import 'package:openfeature_provider_intellitoggle/openfeature_provider_intellitoggle.dart';
 
 Future<void> main() async {
-  final primary = IntelliToggleProvider(
-    clientId: 'client_id',
-    clientSecret: 'client_secret',
-    tenantId: 'tenant_id',
+  final provider = IntelliToggleProvider(
+    clientId: Platform.environment['INTELLITOGGLE_CLIENT_ID']!,
+    clientSecret: Platform.environment['INTELLITOGGLE_CLIENT_SECRET']!,
+    tenantId: Platform.environment['INTELLITOGGLE_TENANT_ID']!,
+    options: IntelliToggleOptions(
+      baseUri: Uri.parse('https://api.intellitoggle.com'),
+      environment: 'production',
+    ),
   );
 
-  final fallback = InMemoryProvider()..setFlag('new-dashboard', false);
+  final api = OpenFeatureAPI();
+  await api.setProviderAndWait(provider);
+  final client = api.getClient('orders-service');
 
-  final provider = MultiProvider(
-    providers: [primary, fallback],
-    strategy: FirstMatchStrategy(),
+  final enabled = await client.getBooleanFlag(
+    'new-checkout',
+    defaultValue: false,
+    context: const EvaluationContext(
+      targetingKey: 'non-pii-subject-id',
+      attributes: {
+        'cohort': 'beta',
+        'device.platform': 'android',
+      },
+    ),
   );
 
-  await OpenFeatureAPI().setProvider(provider);
+  print(enabled);
+  await OpenFeatureAPI.resetInstance();
 }
 ```
 
----
+The default transport uses IntelliToggle's canonical REST endpoints:
 
-## 📚 Resources
+- `POST /api/v1/oauth/token`
+- `POST /api/v1/flags/{flagKey}/evaluate`
 
-- [IntelliToggle Docs](https://intellitoggle.com)
-- [OpenFeature Dart SDK](https://pub.dev/packages/openfeature_dart_server_sdk)
-- [GitHub Repository](https://github.com/aortem/intellitoggle-openfeature-provider-dart-server)
-- [OpenFeature Specification](https://openfeature.dev)
+Use `IntelliToggleOptions.environment` to supply the deployment environment
+for every evaluation. An invocation context can override it by explicitly
+providing `environment`.
 
----
+## Context and privacy
 
-## 📝 License
+Evaluation attributes are sent as IntelliToggle's top-level context contract.
+JSON-compatible nested maps and lists are preserved, including dotted
+attribute names.
+
+The provider does not require a targeting key for default flag evaluation.
+When targeting is needed, use an opaque, non-PII identifier. Attributes listed
+in `privateAttributes` are removed before the request is sent:
+
+```dart
+const EvaluationContext(
+  targetingKey: 'subject-7f41',
+  attributes: {
+    'plan': 'free',
+    'email': 'not-sent@example.com',
+    'privateAttributes': ['email'],
+  },
+)
+```
+
+Paid entitlements, authorization, and other product policy should remain in
+the consuming service. A feature flag is not an authorization boundary.
+
+## Failure behavior
+
+IntelliToggle follows OpenFeature fallback semantics:
+
+- missing flags return the caller default with `FLAG_NOT_FOUND`;
+- response type mismatches return the caller default with `TYPE_MISMATCH`;
+- authentication, transport, and unexpected API failures return the caller
+  default with `GENERAL`.
+
+Use the OpenFeature detailed-evaluation methods when the caller needs the
+reason, variant, or error code.
+
+## Optional OFREP transport
+
+Set `useOfrep: true` and provide `ofrepBaseUri` to evaluate through an
+OFREP-compatible endpoint. The package also includes local OREP/OFREP helpers
+for protocol testing.
+
+```dart
+final options = IntelliToggleOptions(
+  useOfrep: true,
+  ofrepBaseUri: Uri.parse('https://ofrep.example.com'),
+  ofrepAuthToken: Platform.environment['OFREP_AUTH_TOKEN'],
+  timeout: const Duration(seconds: 5),
+  maxRetries: 3,
+  cacheTtl: const Duration(minutes: 1),
+);
+```
+
+Plain HTTP is accepted only for `localhost` and `127.0.0.1`.
+
+## Local and fallback testing
+
+```dart
+final provider = InMemoryProvider()
+  ..setFlag('new-checkout', true);
+
+final api = OpenFeatureAPI();
+await api.setProviderAndWait(provider);
+final client = api.getClient('test-service');
+
+final enabled = await client.getBooleanFlag(
+  'new-checkout',
+  defaultValue: false,
+);
+```
+
+Run the package validation suite with:
+
+```bash
+dart pub get
+dart analyze
+dart test
+dart pub publish --dry-run
+```
+
+Live IntelliToggle integration tests additionally require
+`INTELLITOGGLE_CLIENT_ID`, `INTELLITOGGLE_CLIENT_SECRET`, and
+`INTELLITOGGLE_TENANT_ID`. Set `INTELLITOGGLE_API_URL` to test a
+non-production deployment.
+
+## License
 
 BSD-3-Clause
