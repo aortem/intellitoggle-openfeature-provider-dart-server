@@ -49,9 +49,39 @@ provider.replaceValues({
 ```
 
 Snapshot replacement emits an OpenFeature `configurationChanged` event. The
-provider does not reevaluate targeting rules when client context changes; fetch
-a new backend-resolved snapshot when the signed-in subject or relevant context
-changes.
+event contains only keys whose values or evaluation details actually changed.
+
+For decoded backend JSON, prefer the full snapshot contract so evaluation
+details survive the network boundary:
+
+```json
+{
+  "flags": {
+    "ads-enabled": {
+      "value": true,
+      "reason": "TARGETING_MATCH",
+      "variant": "on",
+      "metadata": {"source": "backend"}
+    }
+  }
+}
+```
+
+Pass the decoded object to `IntelliToggleClientSnapshot.fromJson`. A flat
+`{"ads-enabled": true}` object is also accepted as a shorthand and uses the
+default `CACHED` reason. Flag values must be non-null JSON values; metadata
+values must be booleans, strings, or numbers. JSON integer values are widened
+when resolving a double flag, but doubles are not truncated for integer flags.
+
+Changing the OpenFeature evaluation context immediately invalidates the old
+snapshot so values resolved for one user cannot be served to another. Fetch a
+new backend-resolved snapshot and call `replaceSnapshot` after login, logout,
+account, or other relevant context changes.
+
+Provider instances are single-use. The SDK shuts a provider down when it is no
+longer bound; check `isShutDown` before a background refresh. Calls to
+`replaceSnapshot` and `replaceValues` after shutdown throw `StateError`, and a
+shut-down instance must not be registered again.
 
 PairQueue can continue consuming its existing backend flag payload directly and
 does not need to adopt this package.
