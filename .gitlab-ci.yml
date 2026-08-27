@@ -109,6 +109,16 @@ openfeature_client_provider_validation:
 openfeature_client_flutter_demo_validation:
   stage: validation
   image: ghcr.io/cirruslabs/flutter:stable
+  before_script:
+    - |
+      FLUTTER_TARGET_VERSION=3.47.1
+      FLUTTER_SDK_ROOT="$(dirname "$(dirname "$(command -v flutter)")")"
+      if ! flutter --version | grep -q "Flutter ${FLUTTER_TARGET_VERSION}"; then
+        git -C "$FLUTTER_SDK_ROOT" fetch --depth 1 origin \
+          "refs/tags/${FLUTTER_TARGET_VERSION}:refs/tags/${FLUTTER_TARGET_VERSION}"
+        git -C "$FLUTTER_SDK_ROOT" checkout --force "$FLUTTER_TARGET_VERSION"
+      fi
+      flutter --version
   script:
     - cd packages/client/example/flutter_snapshot_demo
     - flutter pub get
