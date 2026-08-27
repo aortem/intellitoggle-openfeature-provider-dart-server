@@ -6,7 +6,10 @@ void main() {
     await OpenFeatureAPI.instance.shutdown();
     final provider = IntelliToggleClientProvider.fromValues({'flag': true});
     await OpenFeatureAPI.instance.setProviderAndWait(provider);
-    expect(OpenFeatureAPI.instance.getClient().getBooleanValue('flag', false), isTrue);
+    expect(
+      OpenFeatureAPI.instance.getClient().getBooleanValue('flag', false),
+      isTrue,
+    );
     await OpenFeatureAPI.instance.shutdown();
   });
 }

@@ -18,7 +18,9 @@ void main() {
     await OpenFeatureAPI.instance.shutdown();
   });
 
-  testWidgets('replaces a real IntelliToggle provider snapshot', (tester) async {
+  testWidgets('replaces a real IntelliToggle provider snapshot', (
+    tester,
+  ) async {
     await tester.pumpWidget(IntelliToggleDemo(provider: provider));
     expect(find.text('Feature enabled'), findsOneWidget);
 

@@ -53,7 +53,10 @@ class _IntelliToggleDemoState extends State<IntelliToggleDemo> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(experience, style: Theme.of(context).textTheme.titleLarge),
+                  Text(
+                    experience,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     enabled ? 'Feature enabled' : 'Feature disabled',

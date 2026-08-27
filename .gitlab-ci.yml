@@ -106,6 +106,19 @@ openfeature_client_provider_validation:
   rules:
     - when: always
 
+openfeature_client_flutter_demo_validation:
+  stage: validation
+  image: ghcr.io/cirruslabs/flutter:stable
+  script:
+    - cd packages/client/example/flutter_snapshot_demo
+    - flutter pub get
+    - dart format --output=none --set-exit-if-changed lib test
+    - flutter analyze
+    - flutter test
+    - flutter build web --release
+  rules:
+    - when: always
+
 # Release Triggers
 gitlab_github_release:
   stage: release
