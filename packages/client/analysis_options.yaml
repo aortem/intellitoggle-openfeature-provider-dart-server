@@ -1,5 +1,10 @@
 include: package:lints/recommended.yaml
 
+analyzer:
+  # The Flutter example has its own Flutter-aware analyzer job and options.
+  exclude:
+    - example/flutter_snapshot_demo/**
+
 linter:
   rules:
     directives_ordering: true

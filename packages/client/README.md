@@ -7,6 +7,11 @@ network, file, Flutter platform-channel, or remote-authentication work.
 The package is intentionally unpublished while the upstream client SDK remains
 an unpublished beta dependency.
 
+The [Flutter beta demo](example/flutter_snapshot_demo/) validates this provider
+in a real Flutter web application without adding Flutter to the provider's
+dependency graph. The standalone Dart web smoke target lives at
+`test/web_compile_smoke.dart`.
+
 ## Security model
 
 The application backend authenticates with IntelliToggle, evaluates flags for
