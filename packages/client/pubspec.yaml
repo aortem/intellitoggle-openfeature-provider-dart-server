@@ -14,7 +14,7 @@ dependencies:
   openfeature_dart_client_sdk:
     git:
       url: https://github.com/open-feature/dart-server-sdk.git
-      ref: a441a79a34cb60dfad64feb5230fabe0dc1bff72
+      ref: fca61477e9cce4c81533b7c59525ccfc9f6076ff
       path: packages/openfeature_dart_client_sdk
 
 dev_dependencies:
