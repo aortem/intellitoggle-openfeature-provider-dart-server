@@ -4,8 +4,8 @@ This package exposes backend-resolved IntelliToggle flag snapshots through the
 static-context OpenFeature Dart Client SDK. It is pure Dart and performs no
 network, file, Flutter platform-channel, or remote-authentication work.
 
-The package is intentionally unpublished while the upstream client SDK remains
-an unpublished beta dependency.
+The upstream client SDK is available from pub.dev as `0.0.1-beta.1`. This
+provider remains unpublished while its external beta validation is completed.
 
 The [Flutter beta demo](example/flutter_snapshot_demo/) validates this provider
 in a real Flutter web application without adding Flutter to the provider's

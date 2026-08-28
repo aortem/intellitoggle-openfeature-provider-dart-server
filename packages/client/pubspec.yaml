@@ -11,11 +11,7 @@ environment:
 resolution: workspace
 
 dependencies:
-  openfeature_dart_client_sdk:
-    git:
-      url: https://github.com/open-feature/dart-server-sdk.git
-      ref: fca61477e9cce4c81533b7c59525ccfc9f6076ff
-      path: packages/openfeature_dart_client_sdk
+  openfeature_dart_client_sdk: ^0.0.1-beta.1
 
 dev_dependencies:
   lints: ^6.0.0

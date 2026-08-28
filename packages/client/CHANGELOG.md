@@ -4,6 +4,7 @@
 
 - Validate the OpenFeature Dart client beta with Dart web and Flutter web
   compile targets.
+- Resolve the published `openfeature_dart_client_sdk` beta from pub.dev.
 - Add a Flutter demo that replaces backend-resolved IntelliToggle snapshots.
 
 ## 0.0.1-alpha.2
