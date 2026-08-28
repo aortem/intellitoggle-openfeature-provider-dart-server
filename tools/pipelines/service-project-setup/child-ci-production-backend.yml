@@ -87,10 +87,8 @@ validate_dart_sdk_version:
   script:
     - echo "Validating Dart SDK versions in all pubspec.yaml files..."
     - apk add --no-cache grep
-    - cd openfeature-provider-intellitoggle
-
     # Find all pubspec.yaml files (recursively, all levels)
-    - PUBSPEC_FILES=$(find . -name "pubspec.yaml")
+    - PUBSPEC_FILES=$(find packages -name "pubspec.yaml")
     - echo "Found the following pubspec.yaml files:"
     - echo "$PUBSPEC_FILES"
 
@@ -147,9 +145,17 @@ analyze_main:
     - echo "🔍 Locating Dart packages…"
     - |
       # Find all package dirs (where pubspec.yaml lives)
-      find openfeature-provider-intellitoggle -type f -name pubspec.yaml -exec dirname {} \; | sort -u \
+      find packages -type f -name pubspec.yaml -exec dirname {} \; | sort -u \
       | while read -r pkg; do
           name=$(basename "$pkg")
+
+          # Flutter packages require the Flutter SDK and are validated by the
+          # dedicated Flutter job in the parent pipeline.
+          if grep -Eq '^[[:space:]]*sdk:[[:space:]]*flutter([[:space:]#]|$)' "$pkg/pubspec.yaml"; then
+            echo "Skipping Flutter package in Dart analyzer: $name"
+            continue
+          fi
+
           echo "📦 Analyzing package: $name"
           (
             cd "$pkg"

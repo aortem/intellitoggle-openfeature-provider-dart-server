@@ -9,7 +9,10 @@
 
 # Ignore Dart clocal build tools
 **/.dart_tool/
+**/build/
+**/coverage/
 **/pubspec.lock
+**/pubspec_overrides.yaml
 **/tmp/pana_*
-openfeature-provider-intellitoggle/doc/openapi.yaml
+packages/server/doc/openapi.yaml
 

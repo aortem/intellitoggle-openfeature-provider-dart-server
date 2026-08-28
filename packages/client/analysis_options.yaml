@@ -1,0 +1,13 @@
+include: package:lints/recommended.yaml
+
+analyzer:
+  # The Flutter example has its own Flutter-aware analyzer job and options.
+  exclude:
+    - example/flutter_snapshot_demo/**
+
+linter:
+  rules:
+    directives_ordering: true
+    prefer_final_locals: true
+    sort_constructors_first: true
+    sort_unnamed_constructors_first: true
