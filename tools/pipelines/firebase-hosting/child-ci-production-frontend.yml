@@ -33,7 +33,18 @@ validate_branch_name:
   script:
     - echo "Validating branch name..."
     - |
-      BRANCH_NAME=${CI_COMMIT_BRANCH:-$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}
+      if [ -n "${CI_COMMIT_TAG:-}" ]; then
+        echo "Release tag: $CI_COMMIT_TAG"
+        if echo "$CI_COMMIT_TAG" | grep -Eq "^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9._-]+)?$"; then
+          echo "✅ Valid release tag: $CI_COMMIT_TAG."
+          exit 0
+        fi
+
+        echo "❌ Invalid release tag: $CI_COMMIT_TAG."
+        exit 1
+      fi
+
+      BRANCH_NAME=${CI_COMMIT_BRANCH:-${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME:-$CI_COMMIT_REF_NAME}}
       echo "Branch name: $BRANCH_NAME"
 
       if echo "$BRANCH_NAME" | grep -Eq "^(development|qa|beta|main)$"; then
