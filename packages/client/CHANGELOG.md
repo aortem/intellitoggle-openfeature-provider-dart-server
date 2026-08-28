@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.1-beta.2
+
+- Point package metadata at the public GitHub mirror so pub.dev users can
+  inspect the source, examples, and issue history without private-repository
+  access.
+
 ## 0.0.1-beta.1
 
 - Add a web-compatible OFREP provider with short-lived evaluation-token
