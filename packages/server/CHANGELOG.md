@@ -1,3 +1,10 @@
+## 0.0.11
+
+- Updated compatibility to `openfeature_dart_server_sdk` `^0.0.24` so the
+  provider installs with the current published server SDK.
+- Aligned provider metadata, outbound headers, documentation, and the example
+  package with version `0.0.11`.
+
 ## 0.0.10
 
 - Corrected IntelliToggle OAuth and flag evaluation routes to the canonical
