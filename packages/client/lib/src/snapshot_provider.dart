@@ -96,6 +96,9 @@ final class IntelliToggleClientProvider
   /// Whether this single-use provider has been shut down by the SDK or caller.
   bool get isShutDown => _closed;
 
+  /// Sorted keys currently available in the immutable snapshot.
+  List<String> get snapshotKeys => _flags.keys.toList()..sort();
+
   @override
   Stream<ProviderEvent> get events => _events.stream;
 
