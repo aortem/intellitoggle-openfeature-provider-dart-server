@@ -1,11 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.0.1-beta.1
 
+- Add a web-compatible OFREP provider with short-lived evaluation-token
+  callbacks, bulk initialization, context reconciliation, ETag refresh, and
+  synchronous cached resolution.
+- Keep OAuth client credentials out of browsers and Flutter applications.
 - Validate the OpenFeature Dart client beta with Dart web and Flutter web
-  compile targets.
-- Resolve the published `openfeature_dart_client_sdk` beta from pub.dev.
-- Add a Flutter demo that replaces backend-resolved IntelliToggle snapshots.
+  compile targets and a Flutter snapshot demo.
 
 ## 0.0.1-alpha.2
 
