@@ -33,6 +33,12 @@ release:
 
         git fetch --tags
 
+        if grep -Eq "^publish_to:[[:space:]]*none([[:space:]#]|$)" pubspec.yaml; then
+          echo "Package is marked publish_to: none in ${dir}, skipping release."
+          cd "$ROOT_DIR" || exit 1
+          continue
+        fi
+
         VERSION=$(grep "^version:" pubspec.yaml | sed "s/version: //" | tr -d '[:space:]')
         echo "Version from pubspec.yaml: $VERSION"
 
@@ -45,7 +51,7 @@ release:
         if echo "$PUB_RESPONSE" | jq empty 2>/dev/null; then
           PUB_DEV_LATEST=$(echo "$PUB_RESPONSE" | jq -r ".latest.version")
         else
-          echo "⚠️  Failed to parse pub.dev response or package not published yet."
+          echo "Failed to parse pub.dev response or package not published yet."
           PUB_DEV_LATEST="none"
         fi
         echo "Latest version on pub.dev for package ${PUB_PACKAGE_NAME}: $PUB_DEV_LATEST"
@@ -62,8 +68,10 @@ release:
 
         LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
         echo "Latest Git tag: $LATEST_TAG"
+        CURRENT_VERSION_TAG=$(git tag -l "v$VERSION")
+        echo "Current version tag: ${CURRENT_VERSION_TAG:-none}"
 
-        if [ "v$VERSION" != "$LATEST_TAG" ] && { [ "$PUB_DEV_LATEST" = "none" ] || [ "$VERSION" != "$PUB_DEV_LATEST" ]; }; then
+        if [ -z "$CURRENT_VERSION_TAG" ] && [ "v$VERSION" != "$LATEST_TAG" ] && { [ "$PUB_DEV_LATEST" = "none" ] || [ "$VERSION" != "$PUB_DEV_LATEST" ]; }; then
           echo "New version detected in ${dir}. Proceeding with auto-release."
         else
           echo "Version has not been bumped in ${dir}."
@@ -78,7 +86,7 @@ release:
         git config --global user.name "${_GIT_USER}"
 
         git remote set-url origin https://${GITLAB_USERNAME}:${GITLAB_TOKEN}@gitlab.com/dartapps/apps/intellitoggle/openfeature-provider-intellitoggle.git
-        
+
         echo "Creating Git tag: v$VERSION"
         git tag "v$VERSION"
         echo "Pushing Git tag v$VERSION to origin"
