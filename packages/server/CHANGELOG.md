@@ -1,3 +1,8 @@
+## [0.0.13]
+
+- Await the initialization result inside its error-handling block when shutdown interrupts initialization. This also resolves the newer Dart analyzer warning that blocked full server CI validation.
+- Retain the project identity verification introduced in 0.0.12. Enable explicit project selection after the IntelliToggle 0.1.5 API rollout is verified.
+
 ## [0.0.12]
 
 - Add projectId configuration and project/environment request headers. Explicit project evaluations fail closed unless the API confirms tenant, project and environment identity. Partition cached evaluations by that identity.
