@@ -94,6 +94,17 @@ openfeature_gherkin_conformance:
   rules:
     - when: always
 
+openfeature_server_provider_validation:
+  stage: validation
+  image: dart:stable
+  script:
+    - dart pub get
+    - cd packages/server
+    - dart analyze
+    - dart test
+  rules:
+    - when: always
+
 openfeature_client_provider_validation:
   stage: validation
   image: dart:stable
