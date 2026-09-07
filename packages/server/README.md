@@ -12,7 +12,7 @@ integrations should use this package.
 ```yaml
 dependencies:
   openfeature_dart_server_sdk: ^0.0.24
-  openfeature_provider_intellitoggle: ^0.0.11
+  openfeature_provider_intellitoggle: ^0.0.13
 ```
 
 The provider uses an IntelliToggle OAuth client with `flags:read` and
@@ -155,3 +155,16 @@ non-production deployment.
 ## License
 
 BSD-3-Clause
+
+### Project-scoped credentials
+
+Use a dedicated OAuth client restricted to the intended project and environment,
+with `flags:read flags:evaluate` runtime scopes. Configure
+`IntelliToggleOptions(projectId: 'proj_...', environment: 'production')`.
+The provider sends `X-Project-ID` and `X-Environment`, and rejects responses
+without matching tenant/project/environment metadata. This deliberately fails
+closed against API deployments that do not yet implement project isolation.
+Without `projectId`, existing consumers continue using the legacy/global scope.
+Set `INTELLITOGGLE_PROJECT_ID` and `INTELLITOGGLE_ENVIRONMENT` when using
+`IntelliToggleOptions.fromEnvironment()`. Never ship OAuth secrets in a mobile or
+browser bundle; mint a project-bound OFREP evaluation token on your backend.
