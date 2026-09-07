@@ -77,7 +77,7 @@ class IntelliToggleProvider implements FeatureProvider {
       _eventEmitter.emit(IntelliToggleEvent.initializing());
       await _testConnection();
       if (_state == ProviderState.SHUTDOWN) {
-        return _initCompleter.future;
+        return await _initCompleter.future;
       }
 
       if (_options.enableLogging) {

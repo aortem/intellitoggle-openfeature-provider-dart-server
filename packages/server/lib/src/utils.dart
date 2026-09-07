@@ -25,6 +25,20 @@ class IntelliToggleUtils {
     required this.tenantId,
   });
 
+  void _verifyScope(Map<String, dynamic> result) {
+    final expectedProject = _options.projectId;
+    if (expectedProject == null)
+      return; // Existing legacy consumers are unchanged.
+    final metadata = result['metadata'] ?? result['flagMetadata'];
+    final identity = metadata is Map ? metadata : result;
+    if (identity['projectId'] != expectedProject ||
+        identity['tenantId'] != tenantId ||
+        (_options.environment != null &&
+            identity['environment'] != _options.environment)) {
+      throw AuthenticationException('Evaluation scope could not be verified');
+    }
+  }
+
   /// Create a canonical JSON string with sorted keys for stable hashing
   String _canonicalJson(Map<String, dynamic> value) {
     List<String> keys = value.keys.map((k) => k.toString()).toList()..sort();
@@ -121,6 +135,8 @@ class IntelliToggleUtils {
       'X-SDK-Version': intelliToggleProviderVersion,
       'X-SDK-Language': 'dart',
       ..._options.headers,
+      if (_options.projectId != null) 'X-Project-ID': _options.projectId!,
+      if (_options.environment != null) 'X-Environment': _options.environment!,
     };
   }
 
@@ -137,6 +153,8 @@ class IntelliToggleUtils {
           _options.ofrepAuthToken!.isNotEmpty)
         'Authorization': 'Bearer ${_options.ofrepAuthToken!}',
       ..._options.headers,
+      if (_options.projectId != null) 'X-Project-ID': _options.projectId!,
+      if (_options.environment != null) 'X-Environment': _options.environment!,
     };
   }
 
@@ -185,6 +203,7 @@ class IntelliToggleUtils {
 
         if (response.statusCode == 200) {
           final result = jsonDecode(response.body) as Map<String, dynamic>;
+          _verifyScope(result);
           if (_options.enableLogging) {
             print('[IntelliToggle] Flag evaluation result: $result');
           }
@@ -256,7 +275,8 @@ class IntelliToggleUtils {
   ) async {
     // Caching: key on flagKey + type + context hash
     final ctxStr = _canonicalJson(context);
-    final cacheKeySource = '$flagKey|$valueType|$ctxStr';
+    final cacheKeySource =
+        '$tenantId|${_options.projectId}|${_options.environment}|$flagKey|$valueType|$ctxStr';
     final cacheKey = base64Url.encode(utf8.encode(cacheKeySource));
     final cached = _options.getCachedFlag(cacheKey);
     if (cached != null) {
@@ -297,6 +317,7 @@ class IntelliToggleUtils {
             );
           }
           final result = jsonDecode(response.body) as Map<String, dynamic>;
+          _verifyScope(result);
           if (_options.enableLogging) {
             print('[IntelliToggle] OFREP body: ${response.body}');
           }

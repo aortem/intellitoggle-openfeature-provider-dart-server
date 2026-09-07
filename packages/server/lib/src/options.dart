@@ -75,6 +75,10 @@ class IntelliToggleOptions {
   /// already include one.
   final String? environment;
 
+  /// Project boundary. Null selects the legacy/global scope. Explicit projects
+  /// require matching identity in every evaluation response (fail closed).
+  final String? projectId;
+
   /// Creates a new IntelliToggleOptions instance
   ///
   /// All parameters are optional and have sensible defaults for production use.
@@ -95,6 +99,7 @@ class IntelliToggleOptions {
     Uri? ofrepBaseUri,
     String? ofrepAuthToken,
     String? environment,
+    String? projectId,
   }) : baseUri = baseUri ?? Uri.parse('https://api.intellitoggle.com'),
        timeout = timeout ?? const Duration(seconds: 10),
        headers = headers ?? const {},
@@ -113,7 +118,8 @@ class IntelliToggleOptions {
        useOfrep = useOfrep ?? false,
        ofrepBaseUri = ofrepBaseUri,
        ofrepAuthToken = ofrepAuthToken,
-       environment = environment;
+       environment = environment,
+       projectId = projectId;
 
   /// Create a copy of this options object with modified values
   ///
@@ -135,6 +141,7 @@ class IntelliToggleOptions {
     Uri? ofrepBaseUri,
     String? ofrepAuthToken,
     String? environment,
+    String? projectId,
   }) {
     return IntelliToggleOptions(
       baseUri: baseUri ?? this.baseUri,
@@ -154,6 +161,7 @@ class IntelliToggleOptions {
       ofrepBaseUri: ofrepBaseUri ?? this.ofrepBaseUri,
       ofrepAuthToken: ofrepAuthToken ?? this.ofrepAuthToken,
       environment: environment ?? this.environment,
+      projectId: projectId ?? this.projectId,
     );
   }
 
@@ -217,6 +225,8 @@ class IntelliToggleOptions {
     final cacheMs = int.tryParse(e['OFREP_CACHE_TTL_MS'] ?? '');
     return IntelliToggleOptions(
       useOfrep: enabled,
+      projectId: e['INTELLITOGGLE_PROJECT_ID'],
+      environment: e['INTELLITOGGLE_ENVIRONMENT'],
       ofrepBaseUri: base != null && base.isNotEmpty ? Uri.parse(base) : null,
       ofrepAuthToken: token,
       timeout: timeoutMs != null ? Duration(milliseconds: timeoutMs) : null,

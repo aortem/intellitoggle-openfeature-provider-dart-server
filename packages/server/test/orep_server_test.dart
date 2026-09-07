@@ -1,3 +1,6 @@
+@Timeout(Duration(seconds: 45))
+library;
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:test/test.dart';
@@ -5,24 +8,24 @@ import 'package:test/test.dart';
 const _testToken = 'changeme-token';
 const _port = 59987;
 
-String _baseUrl(String path) => 'http://localhost:$_port$path';
+String _baseUrl(String path) => 'http://127.0.0.1:$_port$path';
 
 Future<void> _waitForServer() async {
   final client = HttpClient();
   final uri = Uri.parse(_baseUrl('/v1/provider/metadata'));
-  for (var i = 0; i < 50; i++) {
+  final startup = Stopwatch()..start();
+  while (startup.elapsed < const Duration(seconds: 30)) {
     try {
       final req = await client.getUrl(uri).timeout(const Duration(seconds: 1));
       req.headers.add('authorization', 'Bearer $_testToken');
-      final resp = await req.close();
+      final resp = await req.close().timeout(const Duration(seconds: 1));
       await resp.drain();
       if (resp.statusCode == 200) {
         client.close();
         return;
       }
-    } catch (_) {
-      await Future.delayed(const Duration(milliseconds: 100));
-    }
+    } catch (_) {}
+    await Future.delayed(const Duration(milliseconds: 100));
   }
   client.close();
   throw StateError('OREP HTTP server did not start in time');
@@ -54,6 +57,7 @@ void main() {
       environment: {
         ...Platform.environment,
         'OREP_AUTH_TOKEN': _testToken,
+        'OREP_PROVIDER_MODE': 'inmemory',
         'OREP_HOST': '127.0.0.1',
         'OREP_PORT': '$_port',
       },

@@ -75,7 +75,7 @@ void main() {
           'scope': 'flags:read flags:evaluate',
         });
         expect(tokenRequest.headers['x-tenant-id'], 'tenant-1');
-        expect(requests.last.headers['x-sdk-version'], '0.0.11');
+        expect(requests.last.headers['x-sdk-version'], '0.0.13');
         expect(requests.last.headers['authorization'], 'Bearer token-1');
         expect(evaluationBody, {
           'targetingKey': 'subject-123',
@@ -89,7 +89,7 @@ void main() {
         expect(result.reason, 'TARGETING_MATCH');
         expect(result.variant, 'enabled');
         expect(result.errorCode, isNull);
-        expect(provider.metadata.version, '0.0.11');
+        expect(provider.metadata.version, '0.0.13');
       },
     );
 
