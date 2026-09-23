@@ -171,8 +171,15 @@ class IntelliToggleOptions {
   ///
   /// [baseUri] - Custom API endpoint (defaults to localhost:8080)
   /// [timeout] - Custom timeout (defaults to 5 seconds)
-  factory IntelliToggleOptions.development({Uri? baseUri, Duration? timeout}) {
+  factory IntelliToggleOptions.development({
+    Uri? baseUri,
+    Duration? timeout,
+    String? projectId,
+    String? environment,
+  }) {
     return IntelliToggleOptions(
+      projectId: projectId,
+      environment: environment,
       baseUri: baseUri ?? Uri.parse('http://localhost:8080'),
       timeout: timeout ?? const Duration(seconds: 5),
       enableLogging: true,
@@ -192,8 +199,12 @@ class IntelliToggleOptions {
     Uri? baseUri,
     Duration? timeout,
     Duration? pollingInterval,
+    String? projectId,
+    String? environment,
   }) {
     return IntelliToggleOptions(
+      projectId: projectId,
+      environment: environment,
       baseUri: baseUri ?? Uri.parse('https://api.intellitoggle.com'),
       timeout: timeout ?? const Duration(seconds: 10),
       pollingInterval: pollingInterval ?? const Duration(minutes: 5),
@@ -214,7 +225,10 @@ class IntelliToggleOptions {
   /// - OFREP_TIMEOUT_MS: request timeout in ms
   /// - OFREP_MAX_RETRIES: integer
   /// - OFREP_CACHE_TTL_MS: integer
-  factory IntelliToggleOptions.fromEnvironment() {
+  factory IntelliToggleOptions.fromEnvironment({
+    String? projectId,
+    String? environment,
+  }) {
     // Use Platform.environment at runtime
     final Map<String, String> e = Platform.environment;
     final enabled = (e['OFREP_ENABLED'] ?? '').toLowerCase() == 'true';
@@ -225,8 +239,8 @@ class IntelliToggleOptions {
     final cacheMs = int.tryParse(e['OFREP_CACHE_TTL_MS'] ?? '');
     return IntelliToggleOptions(
       useOfrep: enabled,
-      projectId: e['INTELLITOGGLE_PROJECT_ID'],
-      environment: e['INTELLITOGGLE_ENVIRONMENT'],
+      projectId: projectId ?? e['INTELLITOGGLE_PROJECT_ID'],
+      environment: environment ?? e['INTELLITOGGLE_ENVIRONMENT'],
       ofrepBaseUri: base != null && base.isNotEmpty ? Uri.parse(base) : null,
       ofrepAuthToken: token,
       timeout: timeoutMs != null ? Duration(milliseconds: timeoutMs) : null,

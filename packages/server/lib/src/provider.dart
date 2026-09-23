@@ -261,7 +261,9 @@ class IntelliToggleProvider implements FeatureProvider {
       final result = FlagEvaluationResult<T>(
         flagKey: flagKey,
         value: value,
-        reason: response['reason']?.toString() ?? 'DEFAULT',
+        reason:
+            (response['reasonCode'] ?? response['reason'])?.toString() ??
+            'DEFAULT',
         variant:
             response['variant']?.toString() ??
             response['variationId']?.toString(),
@@ -346,6 +348,15 @@ class IntelliToggleProvider implements FeatureProvider {
 
   /// Test connection to IntelliToggle API health endpoint
   Future<dynamic> _testConnection() async {
+    if (!_options.useOfrep && _options.projectId != null) {
+      await _utils.verifyEvaluationReadiness();
+      return;
+    }
+    if (!_options.useOfrep) {
+      print(
+        '[IntelliToggle] Set projectId and environment to verify evaluation readiness; legacy unscoped behavior is enabled.',
+      );
+    }
     final uri = _options.useOfrep
         ? (_options.ofrepBaseUri ?? _options.baseUri).resolve(
             '/v1/provider/metadata',
