@@ -84,7 +84,27 @@ final class IntelliToggleRemoteClientProvider
     if (context == null) {
       throw StateError('The provider has not been initialized.');
     }
-    await _refreshFor(context);
+    final generation = _refreshGeneration + 1;
+    try {
+      final applied = await _refreshFor(context);
+      if (applied && !_closed && generation == _refreshGeneration) {
+        _events.add(ProviderEvent(type: ProviderEventType.ready));
+      }
+    } on Object catch (error) {
+      // An old transport failure must not change the active identity's status.
+      if (!_closed && generation == _refreshGeneration) {
+        _events.add(
+          ProviderEvent(
+            type: ProviderEventType.error,
+            message: '$error',
+            errorCode: error is OpenFeatureException
+                ? error.errorCode
+                : ErrorCode.general,
+          ),
+        );
+      }
+      rethrow;
+    }
   }
 
   @override
@@ -173,7 +193,7 @@ final class IntelliToggleRemoteClientProvider
     await _events.close();
   }
 
-  Future<void> _refreshFor(
+  Future<bool> _refreshFor(
     EvaluationContext context, {
     bool resetCacheValidator = false,
   }) async {
@@ -208,11 +228,11 @@ final class IntelliToggleRemoteClientProvider
           body: jsonEncode({'context': context.asMap()}),
         )
         .timeout(requestTimeout);
-    if (generation != _refreshGeneration || _closed) return;
+    if (generation != _refreshGeneration || _closed) return false;
 
     if (response.statusCode == 304) {
       _activeContext = context;
-      return;
+      return true;
     }
     if (response.statusCode != 200) {
       throw OpenFeatureException(
@@ -238,9 +258,10 @@ final class IntelliToggleRemoteClientProvider
     }
 
     final nextSnapshot = _snapshotFromOfrep(Map<String, Object?>.from(decoded));
-    if (generation != _refreshGeneration || _closed) return;
+    if (generation != _refreshGeneration || _closed) return false;
     final previousKeys = _snapshotKeys;
     await _snapshot.shutdown();
+    if (generation != _refreshGeneration || _closed) return false;
     _snapshot = IntelliToggleClientProvider(nextSnapshot);
     _activeContext = context;
     _etag = response.headers['etag'];
@@ -254,6 +275,7 @@ final class IntelliToggleRemoteClientProvider
         ),
       );
     }
+    return true;
   }
 
   List<String> get _snapshotKeys => _snapshot.snapshotKeys;

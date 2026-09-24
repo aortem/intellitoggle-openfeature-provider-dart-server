@@ -117,6 +117,32 @@ openfeature_client_provider_validation:
   rules:
     - when: always
 
+openfeature_client_shared_contract:
+  stage: validation
+  image: dart:stable
+  parallel:
+    matrix:
+      - CONTRACT_PLATFORM: [vm, chrome]
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y python3 chromium
+    - |
+      mkdir -p .dart_tool
+      cat > .dart_tool/contract-chromium <<'CHROME'
+      #!/bin/sh
+      exec chromium --no-sandbox "$@"
+      CHROME
+      chmod +x .dart_tool/contract-chromium
+      export CHROME_EXECUTABLE="$CI_PROJECT_DIR/.dart_tool/contract-chromium"
+  script:
+    - python3 tool/client_contract_evidence.py --platform "$CONTRACT_PLATFORM"
+  artifacts:
+    when: always
+    paths:
+      - build/client-contract/
+  rules:
+    - when: always
+
 openfeature_client_flutter_demo_validation:
   stage: validation
   image: ghcr.io/cirruslabs/flutter:stable
