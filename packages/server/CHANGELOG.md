@@ -1,3 +1,9 @@
+## 0.0.14
+
+- Verify project/environment evaluation permission before READY without flags:read.
+- Add project and environment to named options factories; use project-scoped evaluation routes.
+- Preserve server reason codes and named variants in resolution details.
+
 ## [0.0.13]
 
 - Await the initialization result inside its error-handling block when shutdown interrupts initialization. This also resolves the newer Dart analyzer warning that blocked full server CI validation.
