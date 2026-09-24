@@ -36,5 +36,8 @@ or errors for the current identity. Targeted tests also cover late token failure
 and refresh completion after shutdown. Existing token/request/identity tests
 remain required; no credentials or vendor transport moved into OpenFeature core.
 
-The separate conformance package is unpublished. Published provider dependency
-constraints, package versions and existing validation jobs remain unchanged.
+The separate conformance package is unpublished. The server provider now
+requires the published OpenFeature server SDK `^0.0.26`. The client provider's
+published SDK dependency remains `^0.0.1-beta.1`; the newer client source is
+validated only through this pinned conformance package until its release.
+Provider package versions and existing validation jobs remain unchanged.
