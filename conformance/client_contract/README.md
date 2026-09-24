@@ -6,8 +6,11 @@ responses; a transparent wrapper counts shutdown calls and otherwise delegates
 unchanged to the real provider. It does not simulate provider evaluation,
 events, reconciliation or caching.
 
-The SDK/contract is pinned to `c1dccdd0560526ce25c3a93b398c5e7af2528541`
-(OpenFeature PR186). Run from this canonical provider repository:
+The SDK/contract is pinned to `675b9af76301649c6b1796ad2672c1579fbc6281`,
+the OpenFeature main commit from PR188, including the lifecycle and evidence
+corrections in PR189 and PR190. This validates the merged SDK source; it does
+not imply that a new SDK package has been published. Run from this canonical
+provider repository:
 
 ```sh
 python3 tool/client_contract_evidence.py --platform vm
