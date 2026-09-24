@@ -1,0 +1,20 @@
+name: intellitoggle_client_contract_evidence
+publish_to: none
+environment:
+  sdk: ^3.12.2
+dependencies:
+  http: ^1.6.0
+  test: ^1.26.3
+  openfeature_provider_intellitoggle_client:
+    path: ../../packages/client
+  openfeature_client_provider_contract:
+    git:
+      url: https://github.com/open-feature/dart-sdk.git
+      ref: c1dccdd0560526ce25c3a93b398c5e7af2528541
+      path: conformance/client_provider_contract
+dependency_overrides:
+  openfeature_dart_client_sdk:
+    git:
+      url: https://github.com/open-feature/dart-sdk.git
+      ref: c1dccdd0560526ce25c3a93b398c5e7af2528541
+      path: packages/openfeature_dart_client_sdk
