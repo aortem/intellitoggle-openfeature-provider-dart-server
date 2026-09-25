@@ -118,6 +118,24 @@ openfeature_client_provider_validation:
   rules:
     - when: always
 
+openfeature_server_integration_evidence:
+  stage: validation
+  image: dart:stable
+  parallel:
+    matrix:
+      - SDK_BASELINE: [published, candidate]
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y python3 git
+  script:
+    - python3 tool/server_integration_evidence.py --baseline "$SDK_BASELINE"
+  artifacts:
+    when: always
+    paths:
+      - build/server-integration/
+  rules:
+    - when: always
+
 openfeature_client_shared_contract:
   stage: validation
   image: dart:stable
