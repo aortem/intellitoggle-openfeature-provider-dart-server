@@ -179,6 +179,7 @@ void main() {
       await provider.shutdown();
 
       expect(provider.isShutDown, isTrue);
+      expect(provider.snapshotKeys, isEmpty);
       expect(
         provider
             .resolveBooleanValue('flag', false, EvaluationContext.empty)

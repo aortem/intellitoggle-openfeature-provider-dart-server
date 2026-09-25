@@ -11,7 +11,7 @@ integrations should use this package.
 
 ```yaml
 dependencies:
-  openfeature_dart_server_sdk: ^0.0.24
+  openfeature_dart_server_sdk: ^0.0.26
   openfeature_provider_intellitoggle: ^0.0.13
 ```
 
@@ -168,3 +168,13 @@ Without `projectId`, existing consumers continue using the legacy/global scope.
 Set `INTELLITOGGLE_PROJECT_ID` and `INTELLITOGGLE_ENVIRONMENT` when using
 `IntelliToggleOptions.fromEnvironment()`. Never ship OAuth secrets in a mobile or
 browser bundle; mint a project-bound OFREP evaluation token on your backend.
+
+
+### Scoped readiness (0.0.14)
+
+Use `IntelliToggleOptions.production(projectId: projectId, environment: 'production')`
+(or the development factory) for project-bound credentials. Initialization probes
+evaluation permission with `flags:evaluate`, without requiring `flags:read`.
+A rejected project or environment leaves the provider in ERROR; network/server
+errors retry with the configured backoff. Legacy unscoped configuration logs a
+warning once per provider initialization. `copyWith` remains supported.

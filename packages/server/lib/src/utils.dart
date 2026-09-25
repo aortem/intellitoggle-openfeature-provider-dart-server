@@ -81,7 +81,7 @@ class IntelliToggleUtils {
             'grant_type': 'client_credentials',
             'client_id': clientId,
             'client_secret': clientSecret,
-            'scope': 'flags:read flags:evaluate',
+            'scope': 'flags:evaluate',
           },
         )
         .timeout(_options.timeout);
@@ -158,6 +158,56 @@ class IntelliToggleUtils {
     };
   }
 
+  String _evaluationPath(String key) => _options.projectId == null
+      ? '/api/v1/flags/${Uri.encodeComponent(key)}/evaluate'
+      : '/api/v1/flags/projects/${Uri.encodeComponent(_options.projectId!)}/flags/${Uri.encodeComponent(key)}/evaluate';
+
+  /// Prove evaluation permission without requiring flag-list/read permission.
+  Future<void> verifyEvaluationReadiness() async {
+    for (var attempt = 0; attempt < _options.maxRetries; attempt++) {
+      try {
+        final response = await _httpClient
+            .post(
+              _options.baseUri.resolve(
+                _evaluationPath('__intellitoggle_readiness__'),
+              ),
+              headers: await buildHeaders(),
+              body: '{}',
+            )
+            .timeout(_options.timeout);
+        if (response.statusCode >= 200 && response.statusCode < 300) return;
+        if (response.statusCode == 404) {
+          final body = response.body.toLowerCase();
+          if (body.contains('flag not found') ||
+              body.contains('flag_not_found'))
+            return;
+        }
+        final message =
+            'Readiness failed: ${response.statusCode} - ${_sanitizeError(response.body)}';
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthenticationException(message);
+        }
+        if (response.statusCode < 500) throw ArgumentError(message);
+        throw ApiException(message, code: response.statusCode.toString());
+      } on AuthenticationException {
+        rethrow;
+      } on ArgumentError {
+        rethrow;
+      } catch (_) {
+        if (attempt + 1 >= _options.maxRetries) rethrow;
+        await Future<void>.delayed(
+          Duration(
+            milliseconds: math.min(
+              _options.retryDelay.inMilliseconds * (1 << attempt),
+              30000,
+            ),
+          ),
+        );
+      }
+    }
+    throw ApiException('Readiness requires at least one attempt');
+  }
+
   /// Evaluate a flag via IntelliToggle API
   ///
   /// Makes a POST request to the flag evaluation endpoint with the provided
@@ -196,7 +246,7 @@ class IntelliToggleUtils {
         // Use POST request to evaluate flag with context
         final response = await _makeRequest(
           'POST',
-          '/api/v1/flags/${Uri.encodeComponent(flagKey)}/evaluate',
+          _evaluationPath(flagKey),
           headers: headers,
           body: jsonEncode(context),
         );
