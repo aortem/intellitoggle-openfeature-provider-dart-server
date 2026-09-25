@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Report `providerNotReady` consistently before remote initialization and after
+  shutdown, while preserving typed caller defaults.
+- Clear cached flags, context and validators during shutdown. Provider instances
+  remain single-use; the shared v2 contract declares no reinitialization support.
+
 ## 0.0.1-beta.2
 
 - Point package metadata at the public GitHub mirror so pub.dev users can

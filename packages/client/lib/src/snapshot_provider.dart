@@ -193,6 +193,7 @@ final class IntelliToggleClientProvider
       return;
     }
     _closed = true;
+    _flags = const {};
     await _events.close();
   }
 

@@ -6,7 +6,7 @@ import shutil
 import subprocess
 import sys
 
-SDK_COMMIT = '675b9af76301649c6b1796ad2672c1579fbc6281'
+SDK_COMMIT = '21539eb46b932c234c8daa3d4d080c3e5d703514'
 
 
 def run():

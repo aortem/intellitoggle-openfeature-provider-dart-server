@@ -67,6 +67,10 @@ class IntelliToggleFixture implements ClientProviderFixture {
   }
   @override
   FeatureProvider get provider => observed;
+  // Shutdown permanently closes the real provider's event stream and transport
+  // lifecycle. Consumers must create a new instance instead of reinitializing it.
+  @override
+  bool get supportsReinitialization => false;
   @override
   int get shutdownCalls => observed.shutdownCalls;
   @override

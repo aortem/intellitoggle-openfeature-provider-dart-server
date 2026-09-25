@@ -1,14 +1,15 @@
 # IntelliToggle shared client contract evidence
 
 This adapter runs the real `IntelliToggleRemoteClientProvider` against the
-OpenFeature C01-C10 shared contract. The test transport supplies controlled OFREP
+OpenFeature v2 C01-C13 shared contract. The test transport supplies controlled OFREP
 responses; a transparent wrapper counts shutdown calls and otherwise delegates
 unchanged to the real provider. It does not simulate provider evaluation,
 events, reconciliation or caching.
 
-The SDK/contract is pinned to `675b9af76301649c6b1796ad2672c1579fbc6281`,
-the OpenFeature main commit from PR188, including the lifecycle and evidence
-corrections in PR189 and PR190. This validates the merged SDK source; it does
+The SDK/contract is pinned to `21539eb46b932c234c8daa3d4d080c3e5d703514`,
+the OpenFeature development commit from merged PR193, including the asynchronous
+event-observation regressions and direct provider lifecycle checks. This validates
+the merged SDK source; it does
 not imply that a new SDK package has been published. Run from this canonical
 provider repository:
 
@@ -41,3 +42,11 @@ requires the published OpenFeature server SDK `^0.0.26`. The client provider's
 published SDK dependency remains `^0.0.1-beta.1`; the newer client source is
 validated only through this pinned conformance package until its release.
 Provider package versions and existing validation jobs remain unchanged.
+
+Contract v2 declares `supportsReinitialization: false`: this provider permanently
+closes its event stream on shutdown. Create a new provider instance to restart.
+The C12 run exposed inconsistent uninitialized evaluation errors; the remote
+provider now returns `providerNotReady` with caller defaults both before
+initialization and after shutdown. Shutdown clears cached flags, context and
+ETag state. Direct typed lifecycle and cache-clear regressions accompany the
+shared suite; this does not claim live-backend or native mobile validation.
