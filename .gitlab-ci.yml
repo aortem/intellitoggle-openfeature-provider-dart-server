@@ -62,6 +62,7 @@ debug_merge_request:
 validation_trigger_backend:
   stage: validation
   trigger:
+    strategy: mirror
     include: tools/pipelines/service-project-setup/child-ci-production-backend.yml
   rules:
     # Condition 1: Branch is not main, qa, or development
@@ -170,6 +171,7 @@ openfeature_client_flutter_demo_validation:
 gitlab_github_release:
   stage: release
   trigger:
+    strategy: mirror
     include: tools/pipelines/service-project-setup/child-ci-release.yml
   rules:
     - if: '$CI_COMMIT_BRANCH == "development"'
