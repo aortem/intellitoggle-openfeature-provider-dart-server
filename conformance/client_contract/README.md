@@ -6,8 +6,11 @@ responses; a transparent wrapper counts shutdown calls and otherwise delegates
 unchanged to the real provider. It does not simulate provider evaluation,
 events, reconciliation or caching.
 
-The SDK/contract is pinned to `c1dccdd0560526ce25c3a93b398c5e7af2528541`
-(OpenFeature PR186). Run from this canonical provider repository:
+The SDK/contract is pinned to `675b9af76301649c6b1796ad2672c1579fbc6281`,
+the OpenFeature main commit from PR188, including the lifecycle and evidence
+corrections in PR189 and PR190. This validates the merged SDK source; it does
+not imply that a new SDK package has been published. Run from this canonical
+provider repository:
 
 ```sh
 python3 tool/client_contract_evidence.py --platform vm
@@ -33,5 +36,8 @@ or errors for the current identity. Targeted tests also cover late token failure
 and refresh completion after shutdown. Existing token/request/identity tests
 remain required; no credentials or vendor transport moved into OpenFeature core.
 
-The separate conformance package is unpublished. Published provider dependency
-constraints, package versions and existing validation jobs remain unchanged.
+The separate conformance package is unpublished. The server provider now
+requires the published OpenFeature server SDK `^0.0.26`. The client provider's
+published SDK dependency remains `^0.0.1-beta.1`; the newer client source is
+validated only through this pinned conformance package until its release.
+Provider package versions and existing validation jobs remain unchanged.
