@@ -1,3 +1,12 @@
+## 0.0.14
+
+- Require OpenFeature server SDK `^0.0.26`, including the reviewed lifecycle
+  fixes. Its `TrackingEventDetails.value` is now `num?`; consumers requiring
+  `double?` should read `details.value?.toDouble()`.
+- Verify project/environment evaluation permission before READY without flags:read.
+- Add project and environment to named options factories; use project-scoped evaluation routes.
+- Preserve server reason codes and named variants in resolution details.
+
 ## [0.0.13]
 
 - Await the initialization result inside its error-handling block when shutdown interrupts initialization. This also resolves the newer Dart analyzer warning that blocked full server CI validation.

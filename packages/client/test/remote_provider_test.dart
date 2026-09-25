@@ -8,6 +8,84 @@ import 'package:test/test.dart';
 
 void main() {
   test(
+    'direct typed evaluations restore uninitialized state after shutdown',
+    () async {
+      var requests = 0;
+      final transport = MockClient((_) async {
+        requests++;
+        return http.Response(
+          jsonEncode({
+            'flags': [
+              {'key': 'bool', 'value': true, 'reason': 'TARGETING_MATCH'},
+              {'key': 'int', 'value': 7, 'reason': 'TARGETING_MATCH'},
+              {'key': 'double', 'value': 2.5, 'reason': 'TARGETING_MATCH'},
+              {
+                'key': 'string',
+                'value': 'assigned',
+                'reason': 'TARGETING_MATCH',
+              },
+              {
+                'key': 'structure',
+                'value': {'assigned': true},
+                'reason': 'TARGETING_MATCH',
+              },
+            ],
+          }),
+          200,
+        );
+      });
+      final provider = IntelliToggleRemoteClientProvider(
+        apiBaseUri: Uri.parse('https://api.intellitoggle.test'),
+        tokenProvider: (_) async => 'test-token',
+        httpClient: transport,
+      );
+      final context = EvaluationContext(targetingKey: 'subject');
+      List<ResolutionDetails<Object>> evaluate() => [
+        provider.resolveBooleanValue('bool', false, context),
+        provider.resolveIntegerValue('int', -1, context),
+        provider.resolveDoubleValue('double', -2.5, context),
+        provider.resolveStringValue('string', 'fallback', context),
+        provider.resolveStructureValue('structure', {
+          'fallback': true,
+        }, context),
+      ];
+      final defaults = [
+        false,
+        -1,
+        -2.5,
+        'fallback',
+        {'fallback': true},
+      ];
+      void expectUninitialized() {
+        final results = evaluate();
+        expect(results.map((r) => r.value), defaults);
+        expect(
+          results.map((r) => r.errorCode),
+          everyElement(ErrorCode.providerNotReady),
+        );
+        expect(results.map((r) => r.reason), everyElement('ERROR'));
+      }
+
+      expectUninitialized();
+      expect(requests, 0);
+      await provider.initialize(context);
+      expect(evaluate().map((r) => r.value), [
+        true,
+        7,
+        2.5,
+        'assigned',
+        {'assigned': true},
+      ]);
+      await provider.shutdown();
+      await provider.shutdown();
+      expectUninitialized();
+      await expectLater(provider.initialize(context), throwsStateError);
+      expect(requests, 1);
+      transport.close();
+    },
+  );
+
+  test(
     'loads OFREP values and revalidates the active context with ETag',
     () async {
       var calls = 0;
