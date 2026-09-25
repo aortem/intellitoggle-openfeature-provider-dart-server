@@ -10,11 +10,11 @@ dependencies:
   openfeature_client_provider_contract:
     git:
       url: https://github.com/open-feature/dart-sdk.git
-      ref: 675b9af76301649c6b1796ad2672c1579fbc6281
+      ref: 21539eb46b932c234c8daa3d4d080c3e5d703514
       path: conformance/client_provider_contract
 dependency_overrides:
   openfeature_dart_client_sdk:
     git:
       url: https://github.com/open-feature/dart-sdk.git
-      ref: 675b9af76301649c6b1796ad2672c1579fbc6281
+      ref: 21539eb46b932c234c8daa3d4d080c3e5d703514
       path: packages/openfeature_dart_client_sdk

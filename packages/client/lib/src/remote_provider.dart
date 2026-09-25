@@ -153,41 +153,73 @@ final class IntelliToggleRemoteClientProvider
     String flagKey,
     bool defaultValue,
     EvaluationContext context,
-  ) => _snapshot.resolveBooleanValue(flagKey, defaultValue, context);
+  ) => _resolveWhenReady(
+    defaultValue,
+    () => _snapshot.resolveBooleanValue(flagKey, defaultValue, context),
+  );
 
   @override
   ResolutionDetails<double> resolveDoubleValue(
     String flagKey,
     double defaultValue,
     EvaluationContext context,
-  ) => _snapshot.resolveDoubleValue(flagKey, defaultValue, context);
+  ) => _resolveWhenReady(
+    defaultValue,
+    () => _snapshot.resolveDoubleValue(flagKey, defaultValue, context),
+  );
 
   @override
   ResolutionDetails<int> resolveIntegerValue(
     String flagKey,
     int defaultValue,
     EvaluationContext context,
-  ) => _snapshot.resolveIntegerValue(flagKey, defaultValue, context);
+  ) => _resolveWhenReady(
+    defaultValue,
+    () => _snapshot.resolveIntegerValue(flagKey, defaultValue, context),
+  );
 
   @override
   ResolutionDetails<String> resolveStringValue(
     String flagKey,
     String defaultValue,
     EvaluationContext context,
-  ) => _snapshot.resolveStringValue(flagKey, defaultValue, context);
+  ) => _resolveWhenReady(
+    defaultValue,
+    () => _snapshot.resolveStringValue(flagKey, defaultValue, context),
+  );
 
   @override
   ResolutionDetails<Map<String, Object?>> resolveStructureValue(
     String flagKey,
     Map<String, Object?> defaultValue,
     EvaluationContext context,
-  ) => _snapshot.resolveStructureValue(flagKey, defaultValue, context);
+  ) => _resolveWhenReady(
+    defaultValue,
+    () => _snapshot.resolveStructureValue(flagKey, defaultValue, context),
+  );
+
+  ResolutionDetails<T> _resolveWhenReady<T extends Object>(
+    T defaultValue,
+    ResolutionDetails<T> Function() resolve,
+  ) {
+    if (_closed || _activeContext == null) {
+      return ResolutionDetails<T>(
+        value: defaultValue,
+        errorCode: ErrorCode.providerNotReady,
+        errorMessage: 'The IntelliToggle OFREP provider is not initialized.',
+        reason: 'ERROR',
+      );
+    }
+    return resolve();
+  }
 
   @override
   Future<void> shutdown() async {
     if (_closed) return;
     _closed = true;
     _refreshGeneration++;
+    _activeContext = null;
+    _etag = null;
     await _snapshot.shutdown();
     if (_ownsHttpClient) _httpClient.close();
     await _events.close();
