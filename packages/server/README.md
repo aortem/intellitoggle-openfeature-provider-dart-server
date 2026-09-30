@@ -12,7 +12,7 @@ integrations should use this package.
 ```yaml
 dependencies:
   openfeature_dart_server_sdk: ^0.0.26
-  openfeature_provider_intellitoggle: ^0.0.13
+  openfeature_provider_intellitoggle: ^0.0.14
 ```
 
 The provider uses an IntelliToggle OAuth client with `flags:read` and
