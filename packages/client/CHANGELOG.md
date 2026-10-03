@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.0.1-beta.3
+
+- Require the published OpenFeature Dart Client SDK `0.0.1-beta.2` or later
+  within the existing prerelease constraint.
+- Report failed refreshes with provider error events and emit readiness again
+  when a subsequent refresh recovers, including unchanged flag snapshots.
 
 - Report `providerNotReady` consistently before remote initialization and after
   shutdown, while preserving typed caller defaults.
