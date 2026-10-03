@@ -1,6 +1,6 @@
 name: openfeature_provider_intellitoggle_client
 description: IntelliToggle OFREP and snapshot providers for the OpenFeature Dart Client SDK.
-version: 0.0.1-beta.2
+version: 0.0.1-beta.3
 homepage: https://intellitoggle.com
 repository: https://github.com/aortem/intellitoggle-openfeature-provider-dart-server
 
@@ -11,7 +11,7 @@ resolution: workspace
 
 dependencies:
   http: ^1.6.0
-  openfeature_dart_client_sdk: ^0.0.1-beta.1
+  openfeature_dart_client_sdk: ^0.0.1-beta.2
 
 dev_dependencies:
   lints: ^6.0.0

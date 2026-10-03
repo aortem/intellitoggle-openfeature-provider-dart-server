@@ -5,7 +5,15 @@ IntelliToggle through the static-context OpenFeature Dart Client SDK. It
 includes a web-compatible remote OFREP provider and a no-network snapshot
 provider.
 
-The upstream client SDK is available from pub.dev as `0.0.1-beta.1`.
+Use this provider with the published OpenFeature Dart Client SDK
+`0.0.1-beta.2`. The provider requires Dart `3.12.2` or later; this is a
+different minimum from the upstream SDK's Dart `3.10.0` minimum.
+
+```yaml
+dependencies:
+  openfeature_dart_client_sdk: 0.0.1-beta.2
+  openfeature_provider_intellitoggle_client: 0.0.1-beta.3
+```
 
 The [Flutter beta demo](example/flutter_snapshot_demo/) validates this provider
 in a real Flutter web application without adding Flutter to the provider's
