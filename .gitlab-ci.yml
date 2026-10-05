@@ -211,7 +211,9 @@ openfeature_client_support_window:
   artifacts:
     when: always
     paths:
-      - build/client-support/
+      - build/client-support/*/*/receipt.json
+      - build/client-support/*/*/*.log
+      - build/client-support/*/*/consumer-pubspec.lock
   rules:
     - when: always
 
