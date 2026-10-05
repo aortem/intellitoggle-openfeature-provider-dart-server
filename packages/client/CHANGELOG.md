@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Align the client provider with published OpenFeature client SDK `0.0.1`.
+- Lower the client Dart minimum to `3.10.0`; validate the isolated package
+  and shared provider contract on Dart 3.10, 3.11, 3.12 and 3.13 in VM/Chrome.
+- Preserve the server workspace minimum; client compatibility is resolved
+  independently without runtime dependency overrides.
+
 ## 0.0.1-beta.3
 
 - Require the published OpenFeature Dart Client SDK `0.0.1-beta.2` or later

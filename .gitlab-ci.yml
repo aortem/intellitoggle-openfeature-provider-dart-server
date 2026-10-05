@@ -185,6 +185,38 @@ openfeature_client_flutter_demo_validation:
   rules:
     - when: always
 
+
+# The client has a broader Dart window than the server workspace.
+# Isolated package resolution verifies the actual published SDK, not an override.
+openfeature_client_support_window:
+  stage: validation
+  image: dart:$CLIENT_DART_VERSION
+  parallel:
+    matrix:
+      - CLIENT_DART_VERSION: ["3.10.0", "3.11.0", "3.12.2", "3.13.4"]
+        SUPPORT_PLATFORM: [vm, chrome]
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y python3 git chromium
+    - |
+      mkdir -p .dart_tool
+      cat > .dart_tool/support-chromium <<'CHROME'
+      #!/bin/sh
+      exec chromium --no-sandbox "$@"
+      CHROME
+      chmod +x .dart_tool/support-chromium
+      export CHROME_EXECUTABLE="$CI_PROJECT_DIR/.dart_tool/support-chromium"
+  script:
+    - python3 tool/client_support_evidence.py --platform "$SUPPORT_PLATFORM"
+  artifacts:
+    when: always
+    paths:
+      - build/client-support/*/*/receipt.json
+      - build/client-support/*/*/*.log
+      - build/client-support/*/*/consumer-pubspec.lock
+  rules:
+    - when: always
+
 # Release Triggers
 gitlab_github_release:
   stage: release
