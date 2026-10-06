@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.1-beta.4
 
 - Align the client provider with published OpenFeature client SDK `0.0.1`.
 - Lower the client Dart minimum to `3.10.0`; validate the isolated package

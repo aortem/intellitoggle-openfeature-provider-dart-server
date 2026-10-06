@@ -1,3 +1,7 @@
+## 0.0.15
+
+- Use the published OpenFeature Dart server SDK 0.1.0 dependency and update the server demo dependency; runtime API files are unchanged by this release preparation.
+
 ## 0.0.14
 
 - Require OpenFeature server SDK `^0.0.26`, including the reviewed lifecycle
