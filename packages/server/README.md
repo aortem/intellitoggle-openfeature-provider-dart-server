@@ -123,6 +123,19 @@ final options = IntelliToggleOptions(
 
 Plain HTTP is accepted only for `localhost` and `127.0.0.1`.
 
+## Retry configuration (0.0.16)
+
+In this release, `maxRetries` is the total attempt limit, including the initial
+attempt. Set it to `1` for one readiness request with no retry. Do not set it to
+`0` to disable retries: zero skips the HTTP attempt and initialization reports
+an `ApiException` instead of proving readiness. Keep a positive value when
+configuring the provider.
+
+This describes the existing behavior; it does not change the option name,
+default, validation or API contract. A future validation or naming change needs
+its own compatibility review. Definitive scoped readiness rejection remains
+FATAL; increasing this limit does not authorize retrying denied credentials.
+
 ## Local and fallback testing
 
 ```dart
