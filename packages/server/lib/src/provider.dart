@@ -89,13 +89,25 @@ class IntelliToggleProvider implements FeatureProvider {
 
       _initCompleter.complete();
     } catch (error, stackTrace) {
+      // Scope/authentication configuration cannot recover by retrying the same
+      // provider. Keep transport/server failures recoverable and expose the
+      // native OpenFeature fatal code for a rejected scoped readiness probe.
+      final fatal =
+          _options.projectId != null &&
+          (error is AuthenticationException || error is ArgumentError);
+      final failure = fatal
+          ? ProviderException(
+              'IntelliToggle scoped readiness failed: ${_sanitizeError(error)}',
+              code: ErrorCode.PROVIDER_FATAL,
+            )
+          : error;
       if (_state != ProviderState.SHUTDOWN) {
-        _state = ProviderState.ERROR;
+        _state = fatal ? ProviderState.FATAL : ProviderState.ERROR;
       }
-      final sanitized = _sanitizeError(error);
+      final sanitized = _sanitizeError(failure);
       _eventEmitter.emit(IntelliToggleEvent.error(sanitized));
       if (!_initCompleter.isCompleted) {
-        _initCompleter.completeError(error, stackTrace);
+        _initCompleter.completeError(failure, stackTrace);
       }
       return _initCompleter.future;
     }
