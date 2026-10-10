@@ -9,7 +9,7 @@ environment:
 # Add regular dependencies here.
 dependencies:
   openfeature_dart_server_sdk: ^0.1.0
-  openfeature_provider_intellitoggle: ^0.0.13
+  openfeature_provider_intellitoggle: ^0.0.16
   http: ^1.1.0
   jwt_generator: ^0.0.9
 

@@ -11,12 +11,13 @@ integrations should use this package.
 
 ```yaml
 dependencies:
-  openfeature_dart_server_sdk: ^0.0.26
-  openfeature_provider_intellitoggle: ^0.0.14
+  openfeature_dart_server_sdk: ^0.1.0
+  openfeature_provider_intellitoggle: ^0.0.16
 ```
 
-The provider uses an IntelliToggle OAuth client with `flags:read` and
-`flags:evaluate` scopes. Keep the client secret in a runtime secret manager;
+The provider uses an IntelliToggle OAuth client. Project-scoped readiness and
+evaluation require `flags:evaluate`; additional operations may require
+additional scopes. Keep the client secret in a runtime secret manager;
 never ship it in a browser or mobile application.
 
 ## Configure and evaluate
@@ -159,7 +160,8 @@ BSD-3-Clause
 ### Project-scoped credentials
 
 Use a dedicated OAuth client restricted to the intended project and environment,
-with `flags:read flags:evaluate` runtime scopes. Configure
+with `flags:evaluate` for readiness and evaluation. Grant `flags:read` only
+for separate operations that require it. Configure
 `IntelliToggleOptions(projectId: 'proj_...', environment: 'production')`.
 The provider sends `X-Project-ID` and `X-Environment`, and rejects responses
 without matching tenant/project/environment metadata. This deliberately fails
@@ -170,11 +172,13 @@ Set `INTELLITOGGLE_PROJECT_ID` and `INTELLITOGGLE_ENVIRONMENT` when using
 browser bundle; mint a project-bound OFREP evaluation token on your backend.
 
 
-### Scoped readiness (0.0.14)
+### Scoped readiness (0.0.16)
 
-Use `IntelliToggleOptions.production(projectId: projectId, environment: 'production')`
+Use `IntelliToggleOptions.production().copyWith(projectId: projectId, environment: 'production')`
 (or the development factory) for project-bound credentials. Initialization probes
 evaluation permission with `flags:evaluate`, without requiring `flags:read`.
-A rejected project or environment leaves the provider in ERROR; network/server
+A rejected project, environment, authentication or scope leaves the provider in
+FATAL with native `PROVIDER_FATAL`; reinitializing preserves the failure without
+another request. Network/server
 errors retry with the configured backoff. Legacy unscoped configuration logs a
 warning once per provider initialization. `copyWith` remains supported.

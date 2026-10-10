@@ -1,3 +1,11 @@
+## [0.0.16]
+
+- Report definitive project/environment/authentication/scope readiness rejection as
+  `ProviderState.FATAL` and native `ErrorCode.PROVIDER_FATAL`.
+- Preserve the original rejected initialization without issuing another request;
+  transport/server failures remain recoverable and readiness uses `flags:evaluate`.
+- Align reported provider version, install instructions and demo dependency.
+
 ## 0.0.15
 
 - Use the published OpenFeature Dart server SDK 0.1.0 dependency and update the server demo dependency; runtime API files are unchanged by this release preparation.
