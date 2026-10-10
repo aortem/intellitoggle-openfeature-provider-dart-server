@@ -7,8 +7,8 @@ import os
 import shutil
 import subprocess
 
-SDK_COMMIT = '6f145989a88f55c39bfea08a2dde4fe0fadf59ae'
-PUBLISHED_VERSION = '0.0.26'
+SDK_COMMIT = '8bfe8971aed82e816220c4514f7bd005417e0894'
+PUBLISHED_VERSION = '0.1.0'
 
 
 def git(path, *args):
