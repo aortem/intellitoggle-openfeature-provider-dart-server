@@ -81,7 +81,10 @@ void main() {
         expect((await provider.getObjectFlag('json', {})).value, {'ok': true});
       } else {
         await expectLater(provider.initialize(), throwsA(anything));
-        expect(provider.state, ProviderState.ERROR);
+        expect(
+          provider.state,
+          status < 500 ? ProviderState.FATAL : ProviderState.ERROR,
+        );
       }
       expect(probes, status == 500 ? 2 : 1);
       await provider.shutdown();
@@ -97,4 +100,65 @@ void main() {
       expect(options.copyWith(timeout: Duration.zero).environment, 'e');
     }
   });
+  for (final rejected in [
+    (400, 'Invalid environment'),
+    (401, 'Invalid runtime token'),
+    (403, 'Insufficient runtime scope'),
+    (404, 'Project not found'),
+  ]) {
+    test(
+      'rejected scoped readiness ${rejected.$1} reports PROVIDER_FATAL',
+      () async {
+        var requests = 0;
+        final provider = IntelliToggleProvider(
+          clientId: 'client',
+          clientSecret: 'private-client-secret',
+          tenantId: 'tenant',
+          options: IntelliToggleOptions.production(
+            projectId: 'project',
+            environment: 'development',
+          ).copyWith(maxRetries: 1, enablePolling: false),
+          httpClient: MockClient((request) async {
+            requests++;
+            if (request.url.path.endsWith('/oauth/token')) {
+              expect(request.bodyFields['scope'], 'flags:evaluate');
+              return http.Response(
+                '{"access_token":"token","expires_in":3600}',
+                200,
+              );
+            }
+            return http.Response(
+              jsonEncode({'error': rejected.$2}),
+              rejected.$1,
+            );
+          }),
+        );
+        final fatal = isA<ProviderException>()
+            .having(
+              (e) => e.code,
+              'native error code',
+              ErrorCode.PROVIDER_FATAL,
+            )
+            .having(
+              (e) => e.toString(),
+              'clear scoped readiness message',
+              contains('scoped readiness'),
+            )
+            .having(
+              (e) => e.toString(),
+              'no client secret',
+              isNot(contains('private-client-secret')),
+            );
+        await expectLater(provider.initialize(), throwsA(fatal));
+        expect(provider.state, ProviderState.FATAL);
+        await expectLater(provider.initialize(), throwsA(fatal));
+        expect(
+          requests,
+          2,
+          reason: 'Re-initialization must not retry unchanged rejected scope',
+        );
+        await provider.shutdown();
+      },
+    );
+  }
 }
